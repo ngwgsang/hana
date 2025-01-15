@@ -13,6 +13,8 @@ import Home from 'src/pages/HomePage'
 const Routes = () => {
   return (
     <Router>
+      <Route path="/chat" page={ChatPage} name="chat" />
+      <Route path="/agents" page={AgentsPage} name="agents" />
       <Route path="/home" page={Home} name="home" />
       <Route notfound page={NotFoundPage} />
     </Router>
