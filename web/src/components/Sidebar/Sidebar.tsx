@@ -11,13 +11,17 @@ const Sidebar = () => {
 
   return (
     <div className='flex flex-col gap-2 rounded-md bg-slate-800 p-2 h-full'>
-        <Button className='w-22'>
+        <Button
+          className='w-22'
+          onClick={() => navigate(routes.chat())}>
           <ChatBubbleBottomCenterIcon
           className="h-6 w-6 text-white"
-          onClick={() => navigate(routes.chat())}  // Điều hướng tới /chat
+
           />
         </Button>
-        <Button className='w-22'>
+        <Button
+          className='w-22'
+          onClick={() => navigate(routes.agents())}>
           <SparklesIcon className="h-6 w-6 text-white" />
         </Button>
     </div>
