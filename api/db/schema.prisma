@@ -43,3 +43,13 @@ model Task {
   createdAt DateTime @default(now())                 // Thời gian tạo
   updatedAt DateTime @updatedAt                      // Thời gian cập nhật
 }
+
+model Message {
+  id        Int      @id @default(autoincrement())  // Khóa chính, tự động tăng
+  sender    String                                   // Người gửi
+  content   String                                   // Nội dung tin nhắn
+  isAct     Boolean  @default(true)                  // Trạng thái hoạt động (true/false)
+  timestamp DateTime @default(now())                // Thời gian gửi tin nhắn
+  createdAt DateTime @default(now())                // Thời gian tạo bản ghi
+  updatedAt DateTime @updatedAt                     // Thời gian cập nhật bản ghi
+}

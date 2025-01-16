@@ -2,8 +2,7 @@ import { Metadata, useQuery, useMutation, gql, useLazyQuery } from '@redwoodjs/w
 import { useState, useEffect } from 'react'
 import Header from 'src/components/Header/Header'
 import {
-  PencilSquareIcon,
-  TrashIcon,
+  CogIcon,
   PlusIcon,
 } from '@heroicons/react/24/solid'
 import MainLayout from 'src/layouts/MainLayout/MainLayout'
@@ -69,6 +68,8 @@ const DELETE_AGENT = gql`
   }
 `
 
+
+
 const AgentsPage = () => {
 
   const { data, loading, error, refetch } = useQuery(GET_AGENTS)
@@ -105,33 +106,6 @@ const AgentsPage = () => {
   // Đóng Popup
   const handleClosePopup = () => {
     setIsPopupOpen(false)
-  }
-
-  // Xử lý xóa Agent
-  const handleDelete = (id) => {
-    handleOpenPopup(
-      'Xác nhận xóa',
-      <>
-        <p>Bạn có chắc chắn muốn xóa agent này?</p>
-        <div className="flex justify-end space-x-2 mt-4">
-          <button
-            onClick={handleClosePopup}
-            className="px-4 py-2 bg-gray-300 rounded"
-          >
-            Hủy
-          </button>
-          <button
-            onClick={() => {
-              deleteAgent({ variables: { id } })
-              handleClosePopup()
-            }}
-            className="px-4 py-2 bg-red-600 text-white rounded"
-          >
-            Xóa
-          </button>
-        </div>
-      </>
-    )
   }
 
   // Xử lý thêm mới Agent
@@ -192,6 +166,18 @@ const AgentsPage = () => {
       setSelectedAgentId(null)
     }
 
+    const handleDeleteAgent = async () => {
+      if (confirm('Bạn có chắc chắn muốn xóa Agent này không?')) {
+        try {
+          await deleteAgent({ variables: { id: selectedAgentId } })
+          handleClosePopup()
+          refetch()  // Làm mới danh sách Agent
+        } catch (error) {
+          console.error('Lỗi khi xóa Agent:', error.message)
+        }
+      }
+    }
+
     return (
       <form onSubmit={handleSubmit}>
         <input
@@ -199,7 +185,7 @@ const AgentsPage = () => {
           value={formData.name}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           placeholder="Tên Agent"
-          className="w-full p-2 border mb-2 rounded"
+          className="w-full p-2 border mb-2 rounded text-slate-800"
           required
         />
         <input
@@ -207,7 +193,7 @@ const AgentsPage = () => {
           value={formData.avatar}
           onChange={(e) => setFormData({ ...formData, avatar: e.target.value })}
           placeholder="Link Avatar"
-          className="w-full p-2 border mb-2 rounded"
+          className="w-full p-2 border mb-2 rounded text-slate-800"
           required
         />
         <input
@@ -215,16 +201,30 @@ const AgentsPage = () => {
           value={formData.settings}
           onChange={(e) => setFormData({ ...formData, settings: e.target.value })}
           placeholder="Cài đặt (JSON)"
-          className="w-full p-2 border mb-2 rounded"
+          className="w-full p-2 border mb-2 rounded text-slate-800"
         />
-        <button
-          type="submit"
-          className={`w-full px-4 py-2 ${
-            isEditing ? 'bg-green-600' : 'bg-blue-600'
-          } text-white rounded`}
-        >
-          {isEditing ? 'Cập nhật' : 'Thêm mới'}
-        </button>
+
+        <div className="flex justify-between space-x-2">
+          <button
+            type="submit"
+            className={`w-full px-4 py-2 ${
+              isEditing ? 'bg-green-600' : 'bg-blue-600'
+            } text-white rounded`}
+          >
+            {isEditing ? 'Cập nhật' : 'Thêm mới'}
+          </button>
+
+          {/* Hiển thị nút Xóa khi chỉnh sửa */}
+          {isEditing && (
+            <button
+              type="button"
+              onClick={handleDeleteAgent}
+              className="w-full px-4 py-2 bg-red-600 text-white rounded"
+            >
+              Xóa
+            </button>
+          )}
+        </div>
       </form>
     )
   }
@@ -243,37 +243,32 @@ const AgentsPage = () => {
         </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {data.agents.map((agent) => (
           <div
             key={agent.id}
-            className="p-4 bg-gray-100 rounded shadow flex flex-col items-center"
+            className="relative p-4 bg-gray-100 rounded shadow flex gap-2 items-center"
           >
             <img
               src={agent.avatar}
               alt={agent.name}
-              className="w-20 h-20 rounded-full object-cover mb-2"
+              className="w-16 h-16 rounded-full object-cover border-4"
+              onError={(e) => {
+                e.currentTarget.onerror = null // Ngăn chặn vòng lặp vô hạn
+                e.currentTarget.src = '/spy.png' // Ảnh mặc định
+              }}
             />
-            <h2 className="text-lg font-semibold">{agent.name}</h2>
-            <p className="text-sm text-gray-600">{agent.settings}</p>
-
-            <div className="flex space-x-2 mt-3">
-              <button
-                className="p-2 bg-yellow-400 text-white rounded hover:bg-yellow-500"
-                onClick={() => handleEditAgent(agent.id)}
-              >
-                <PencilSquareIcon className="h-5 w-5" />
-              </button>
-              <button
-                className="p-2 bg-red-600 text-white rounded hover:bg-red-700"
-                onClick={() => handleDelete(agent.id)}
-              >
-                <TrashIcon className="h-5 w-5" />
-              </button>
-            </div>
+            <span className="text-lg font-semibold text-slate-700">{agent.name}</span>
+            <button
+              className="p-2"
+              onClick={() => handleEditAgent(agent.id)}
+            >
+              <CogIcon className="absolute right-2 top-2 h-6 w-6 text-slate-700" />
+            </button>
           </div>
         ))}
       </div>
+
 
       {/* Popup hiển thị nội dung động */}
       <Popup
