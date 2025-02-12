@@ -257,7 +257,7 @@ const HomePage = () => {
           placeholder="Tìm kiếm thẻ..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="p-2 border rounded w-full text-black"
+          className="p-2 border border-blue-600 rounded w-full text-black bg-slate-800 focus:outline-blue-700"
         />
         <button
           onClick={() => setIsFilterVisible(!isFilterVisible)}
@@ -276,11 +276,11 @@ const HomePage = () => {
       </div>
 
       {isFilterVisible && (
-        <div className="bg-gray-100 p-4 rounded mb-4 border-2 border-blue-600">
-          <h3 className="text-lg font-semibold mb-2">Bộ lọc</h3>
+        <div className="bg-slate-800 p-4 rounded mb-4 border-2 border-blue-600">
+          <h3 className="text-lg font-semibold mb-2 text-white">Bộ lọc</h3>
           <div className="grid grid-cols-2 gap-2">
             {tagData?.ankiTags.map((tag) => (
-              <label key={tag.id} className="flex items-center gap-2">
+              <label key={tag.id} className="flex items-center gap-2 text-slate-300">
                 <input type="checkbox" checked={selectedTags.includes(tag.id)} onChange={() => toggleTagSelection(tag.id)} />
                 {tag.name}
               </label>
@@ -298,10 +298,10 @@ const HomePage = () => {
           <div
             ref={index === cards.length - 1 ? lastCardRef : null}
             key={card.id}
-            className="p-4 bg-gray-400 rounded shadow relative group transition duration-300 hover:ring-2 hover:shadow-lg hover:shadow-blue-500/50 hover:bg-gray-100"
+            className="p-4 bg-slate-700 rounded shadow relative group transition duration-300 hover:ring-2 hover:shadow-lg hover:shadow-blue-500/50 hover:bg-slate-800"
           >
-            <h2 className="text-lg font-semibold">{card.front}</h2>
-            <p className="text-gray-600">{card.back}</p>
+            <h2 className="text-lg font-semibold text-white">{card.front}</h2>
+            <p className="text-slate-300">{card.back}</p>
             <div className="mt-2 text-sm text-blue-500">
               {card.tags
                 .slice() // Tạo một bản sao để tránh thay đổi dữ liệu gốc
@@ -323,34 +323,34 @@ const HomePage = () => {
 
 
       {/* Popup chỉnh sửa/thêm thẻ */}
-      <Popup title={isAdding ? 'Thêm thẻ mới' : 'Chỉnh sửa thẻ'} isOpen={isPopupOpen} onClose={handleClosePopup}>
+      <Popup  title={isAdding ? 'Thêm thẻ mới' : 'Chỉnh sửa thẻ'} isOpen={isPopupOpen} onClose={handleClosePopup}>
         {editingCard && (
           <div className="flex flex-col gap-4">
             <label>
-              <span className="font-bold">Mặt trước</span>
+              <span className="font-bold text-slate-200 mb-1">Mặt trước</span>
               <input
                 type="text"
                 value={editingCard.front}
                 onChange={(e) => setEditingCard({ ...editingCard, front: e.target.value })}
-                className="p-2 border rounded w-full text-black"
+                className="p-2 border rounded w-full text-slate-300 bg-slate-900 outline-none border-none"
               />
             </label>
 
             <label>
-              <span className="font-bold">Mặt sau</span>
+              <span className="font-bold text-slate-200 mb-1">Mặt sau</span>
               <textarea
                 // type="text"
                 value={editingCard.back}
                 onChange={(e) => setEditingCard({ ...editingCard, back: e.target.value })}
-                className="p-2 border rounded w-full text-black"
+                className="p-2 border rounded w-full text-slate-300 bg-slate-900 outline-none border-none"
               />
             </label>
 
             <div>
-              <span className="font-bold">Tags</span>
+              <span className="font-bold text-slate-200">Tags</span>
               <div className="grid grid-cols-2 gap-2 mt-2">
                 {tagData?.ankiTags.map((tag) => (
-                  <label key={tag.id} className="flex items-center gap-2">
+                  <label key={tag.id} className="flex items-center gap-2 text-slate-300">
                     <input type="checkbox" checked={selectedTags.includes(tag.id)} onChange={() => toggleTagSelection(tag.id)} />
                     {tag.name}
                   </label>
@@ -359,10 +359,10 @@ const HomePage = () => {
             </div>
 
             <div className='flex gap-1 justify-between'>
-              <button onClick={handleDelete} className="w-full px-4 py-2 bg-gray-300 text-white rounded hover:bg-red-700">
+              <button onClick={handleDelete} className="w-full px-4 py-2 bg-gray-300 text-gray-500 rounded hover:bg-red-700 hover:text-white">
                 Xóa
               </button>
-              <button onClick={handleSave} className="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+              <button onClick={handleSave} className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
                 Lưu
               </button>
             </div>
