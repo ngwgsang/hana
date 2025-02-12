@@ -35,3 +35,8 @@ export const deleteMessage: MutationResolvers['deleteMessage'] = ({ id }) => {
     where: { id },
   })
 }
+
+export const deleteAllMessages: MutationResolvers['deleteAllMessages'] = async () => {
+  const result = await db.message.deleteMany()  // Xóa toàn bộ tin nhắn
+  return result.count                           // Trả về số lượng tin nhắn đã xóa
+}

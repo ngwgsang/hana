@@ -30,5 +30,7 @@ export const schema = gql`
     createMessage(input: CreateMessageInput!): Message! @skipAuth
     updateMessage(id: Int!, input: UpdateMessageInput!): Message! @skipAuth
     deleteMessage(id: Int!): Message! @skipAuth
+    deleteAllMessages: Int! @skipAuth
   }
+
 `

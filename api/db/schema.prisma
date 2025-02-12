@@ -53,3 +53,27 @@ model Message {
   createdAt DateTime @default(now())                // Thời gian tạo bản ghi
   updatedAt DateTime @updatedAt                     // Thời gian cập nhật bản ghi
 }
+
+model AnkiCard {
+  id        Int       @id @default(autoincrement()) // Khóa chính
+  front     String                                  // Mặt trước của thẻ
+  back      String                                  // Mặt sau của thẻ
+  tags      AnkiTag[]                               // Quan hệ nhiều-nhiều với tag (không cần references)
+  schedule  AnkiSch?  @relation(fields: [scheduleId], references: [id]) // 1-1 với AnkiSch
+  scheduleId Int?     @unique                      // Khóa ngoại cho lịch trình
+  createdAt DateTime  @default(now())              // Ngày tạo thẻ
+}
+
+model AnkiTag {
+  id      Int       @id @default(autoincrement()) // Khóa chính
+  name    String    @unique                       // Tên tag (ví dụ: "N2", "Ngữ pháp")
+  cards   AnkiCard[]                              // Quan hệ nhiều-nhiều với AnkiCard (không cần references)
+}
+
+model AnkiSch {
+  id        Int      @id @default(autoincrement()) // Khóa chính
+  createdAt DateTime @default(now())              // Ngày tạo lịch trình
+  enrollAt  DateTime?                             // Ngày bắt đầu luyện tập
+  point     Int       @default(0)                 // Điểm số cho lịch trình
+  card      AnkiCard?                             // Liên kết với 1 thẻ duy nhất (không cần references)
+}
