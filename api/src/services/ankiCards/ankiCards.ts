@@ -64,3 +64,24 @@ export const deleteAnkiCard: MutationResolvers['deleteAnkiCard'] = async ({ id }
     where: { id },
   })
 }
+
+export const bulkCreateAnkiCards: MutationResolvers['bulkCreateAnkiCards'] = async ({ input }) => {
+  return Promise.all(
+    input.map(async (card) => {
+      return db.ankiCard.create({
+        data: {
+          front: card.front,
+          back: card.back,
+          tags: {
+            connect: [{ id: 1 }], // Gán mặc định tag ID = 0
+          },
+        },
+        include: { tags: true },
+      })
+    })
+  )
+}
+
+
+
+

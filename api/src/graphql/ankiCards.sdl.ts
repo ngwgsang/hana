@@ -28,6 +28,7 @@ export const schema = gql`
   type Mutation {
     createAnkiCard(input: CreateAnkiCardInput!): AnkiCard! @skipAuth
     updateAnkiCard(id: Int!, input: UpdateAnkiCardInput!): AnkiCard! @skipAuth
-    deleteAnkiCard(id: Int!): AnkiCard! @skipAuth 
+    deleteAnkiCard(id: Int!): AnkiCard! @skipAuth
+    bulkCreateAnkiCards(input: [CreateAnkiCardInput!]!): [AnkiCard!]! @skipAuth
   }
 `

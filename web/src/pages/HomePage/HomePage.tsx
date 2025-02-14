@@ -2,22 +2,8 @@ import { Metadata, useQuery, useMutation, gql } from '@redwoodjs/web'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Popup from 'src/components/Popup'
 import { FunnelIcon, MagnifyingGlassIcon, PlusIcon, PencilSquareIcon } from '@heroicons/react/24/solid'
+import Papa from 'papaparse'
 
-
-// GraphQL Query để lấy danh sách các thẻ
-// const GET_ANKI_CARDS = gql`
-//   query GetAnkiCards($searchTerm: String, $tagIds: [Int!]) {
-//     ankiCards(searchTerm: $searchTerm, tagIds: $tagIds) {
-//       id
-//       front
-//       back
-//       tags {
-//         id
-//         name
-//       }
-//     }
-//   }
-// `
 const GET_ANKI_CARDS = gql`
   query GetAnkiCards($searchTerm: String, $tagIds: [Int!], $skip: Int, $take: Int) {
     ankiCards(searchTerm: $searchTerm, tagIds: $tagIds, skip: $skip, take: $take) {
@@ -31,8 +17,6 @@ const GET_ANKI_CARDS = gql`
     }
   }
 `
-
-
 
 // GraphQL Query lấy danh sách tag
 const GET_ANKI_TAGS = gql`
@@ -83,6 +67,18 @@ const DELETE_ANKI_CARD = gql`
   }
 `
 
+// Mutation thêm nhiều thẻ từ CSV
+const BULK_CREATE_ANKI_CARDS = gql`
+  mutation BulkCreateAnkiCards($input: [CreateAnkiCardInput!]!) {
+    bulkCreateAnkiCards(input: $input) {
+      id
+      front
+      back
+    }
+  }
+`
+
+
 const HomePage = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [isPopupOpen, setIsPopupOpen] = useState(false)
@@ -95,6 +91,12 @@ const HomePage = () => {
   const take = 10 // Ban đầu tải 10 thẻ
   const [hasMore, setHasMore] = useState(true) // Kiểm tra còn dữ liệu không
   const isFetching = useRef(false) // Chặn việc gọi API liên tục
+  const [isAddingCSV, setIsAddingCSV] = useState(false) // Kiểm tra trạng thái upload CSV
+  const [parsedCards, setParsedCards] = useState([]) // Danh sách thẻ đã parse từ CSV
+  const [createAnkiCards] = useMutation(BULK_CREATE_ANKI_CARDS)
+  const [isUploading, setIsUploading] = useState(false) // Trạng thái upload
+
+
 
   const { data, loading, error, fetchMore, refetch } = useQuery(GET_ANKI_CARDS, {
     variables: { searchTerm: '', tagIds: [], skip: 0, take }, // Tải 10 thẻ ban đầu
@@ -246,6 +248,56 @@ const HomePage = () => {
     )
   }
 
+  // Xử lý khi chọn file CSV
+  const handleFileUpload = (event) => {
+    const file = event.target.files[0]
+    if (!file) return
+
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (result) => {
+        const formattedCards = result.data.map((row) => ({
+          front: row.front,
+          back: row.back,
+          tagIds: [0], // Gán mặc định tag ID = 0
+        }))
+        setParsedCards(formattedCards)
+      },
+      error: (error) => console.error('Lỗi đọc file:', error),
+    })
+  }
+
+  // Gửi dữ liệu lên server để thêm vào database
+  const handleUploadCSV = async () => {
+    if (parsedCards.length === 0) {
+      alert('Không có dữ liệu để thêm!')
+      return
+    }
+    setIsUploading(true) // Bật trạng thái loading
+
+
+    const formattedCards = parsedCards.map((card) => ({
+      front: card.front,
+      back: card.back,
+      tagIds: [1], // Gán mặc định tag ID = 0
+    }))
+
+    try {
+      await createAnkiCards({
+        variables: { input: formattedCards },
+      })
+      alert('Đã thêm thẻ thành công!')
+      setIsPopupOpen(false)
+      setParsedCards([]) // Reset danh sách
+    } catch (error) {
+      console.error('Lỗi khi thêm thẻ:', error)
+    } finally {
+      setIsUploading(false) // Tắt trạng thái loading
+    }
+  }
+
+
   return (
     <main className="p-4 mx-auto my-0 w-[50%]">
       <Metadata title="Home" description="Home page" />
@@ -324,8 +376,55 @@ const HomePage = () => {
 
       {/* Popup chỉnh sửa/thêm thẻ */}
       <Popup  title={isAdding ? 'Thêm thẻ mới' : 'Chỉnh sửa thẻ'} isOpen={isPopupOpen} onClose={handleClosePopup}>
-        {editingCard && (
-          <div className="flex flex-col gap-4">
+
+      <div className="flex flex-col gap-4">
+          {/* Chọn phương thức */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setIsAddingCSV(false)}
+              className={`px-4 py-2 rounded w-full ${
+                !isAddingCSV ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-700'
+              }`}
+            >
+              Thêm thủ công
+            </button>
+            <button
+              onClick={() => setIsAddingCSV(true)}
+              className={`px-4 py-2 rounded w-full ${
+                isAddingCSV ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-700'
+              }`}
+            >
+              Upload CSV
+            </button>
+          </div>
+
+          {/* Nếu chọn thêm CSV */}
+          {isAddingCSV ? (
+            <div className="flex flex-col gap-3">
+              <input type="file" accept=".csv" onChange={handleFileUpload} className="border p-2 rounded" />
+              {parsedCards.length > 0 && (
+                <p className="text-sm text-gray-500">{parsedCards.length} thẻ sẽ được thêm</p>
+              )}
+              <button
+                onClick={handleUploadCSV}
+                disabled={isUploading} // Vô hiệu hóa khi đang tải
+                className={`px-4 py-2 rounded text-white ${isUploading ? 'bg-gray-500' : 'bg-green-600 hover:bg-green-700'}`}
+              >
+                {isUploading ? (
+                  <div className="flex items-center gap-2">
+                    <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 0116 0"></path>
+                    </svg>
+                    Đang tải lên...
+                  </div>
+                ) : (
+                  'Xác nhận thêm thẻ'
+                )}
+              </button>
+            </div>
+          ) : editingCard && (
+            <div className="flex flex-col gap-4">
             <label>
               <span className="font-bold text-slate-200 mb-1">Mặt trước</span>
               <input
@@ -367,7 +466,9 @@ const HomePage = () => {
               </button>
             </div>
           </div>
-        )}
+          )}
+        </div>
+
       </Popup>
 
       {/* Nút thêm thẻ */}

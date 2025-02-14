@@ -33,6 +33,7 @@
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
     "@heroicons/react": "^2.2.0",
-    "mkdirp": "^3.0.1"
+    "mkdirp": "^3.0.1",
+    "papaparse": "^5.5.2"
   }
 }
