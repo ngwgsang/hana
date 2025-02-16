@@ -3,26 +3,36 @@ export const schema = gql`
     id: Int!
     front: String!
     back: String!
-    tags: [AnkiTag]! # Quan hệ nhiều-nhiều
-    schedule: AnkiSch
-    createdAt: DateTime!
+    tags: [AnkiTag]! # Quan hệ nhiều-nhiều với tag
+    createdAt: DateTime! # Ngày tạo thẻ
+    enrollAt: DateTime # Ngày bắt đầu luyện tập
+    point: Int! # Điểm số của thẻ
+  }
+
+  type AnkiTag {
+    id: Int!
+    name: String!
+    cards: [AnkiCard!]! # Quan hệ nhiều-nhiều với AnkiCard
   }
 
   type Query {
-    ankiCards: [AnkiCard!]! @skipAuth
     ankiCards(searchTerm: String, tagIds: [Int!], skip: Int, take: Int): [AnkiCard!]! @skipAuth
   }
 
   input CreateAnkiCardInput {
     front: String!
     back: String!
-    tagIds: [Int!]! # Chấp nhận danh sách ID của Tag
+    tagIds: [Int!]! # Danh sách ID của Tag
+    enrollAt: DateTime # Có thể đặt ngày luyện tập (hoặc mặc định là ngày hiện tại)
+    point: Int # Điểm số ban đầu (mặc định là 0)
   }
 
   input UpdateAnkiCardInput {
     front: String
     back: String
     tagIds: [Int!]
+    enrollAt: DateTime
+    point: Int
   }
 
   type Mutation {
@@ -30,5 +40,6 @@ export const schema = gql`
     updateAnkiCard(id: Int!, input: UpdateAnkiCardInput!): AnkiCard! @skipAuth
     deleteAnkiCard(id: Int!): AnkiCard! @skipAuth
     bulkCreateAnkiCards(input: [CreateAnkiCardInput!]!): [AnkiCard!]! @skipAuth
+    updateAnkiCardPoint(id: Int!, pointChange: Int!): AnkiCard! @skipAuth
   }
 `

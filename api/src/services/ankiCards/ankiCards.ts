@@ -1,27 +1,35 @@
 import type { MutationResolvers } from 'types/graphql'
 import { db } from 'src/lib/db'
 
-export const createAnkiCard: MutationResolvers['createAnkiCard'] = ({ input }) => {
-  return db.ankiCard.create({
+// ✅ Tạo thẻ mới, mặc định enrollAt là ngày hiện tại, point = 0
+export const createAnkiCard: MutationResolvers['createAnkiCard'] = async ({ input }) => {
+  const newCard = await db.ankiCard.create({
     data: {
       front: input.front,
       back: input.back,
-      tags: {
-        connect: input.tagIds.map((tagId) => ({ id: tagId })), // Sửa lỗi này
-      },
+      enrollAt: new Date(),
+      point: 0, // Điểm ban đầu là 0
+      tags: input.tagIds?.length
+        ? { connect: input.tagIds.map((tagId) => ({ id: tagId })) }
+        : undefined, // Nếu có tag thì gán, nếu không thì bỏ qua
     },
     include: {
       tags: true,
     },
   })
+
+  return newCard
 }
 
+// ✅ Cập nhật thẻ
 export const updateAnkiCard: MutationResolvers['updateAnkiCard'] = ({ id, input }) => {
   return db.ankiCard.update({
     where: { id },
     data: {
       front: input.front,
       back: input.back,
+      enrollAt: input.enrollAt ?? undefined, // Chỉ cập nhật nếu có giá trị
+      point: input.point ?? undefined, // Chỉ cập nhật nếu có giá trị
       tags: input.tagIds
         ? { set: [], connect: input.tagIds.map((tagId) => ({ id: tagId })) } // Cập nhật lại tag
         : undefined,
@@ -32,6 +40,7 @@ export const updateAnkiCard: MutationResolvers['updateAnkiCard'] = ({ id, input 
   })
 }
 
+// ✅ Truy vấn danh sách thẻ với bộ lọc
 export const ankiCards: QueryResolvers['ankiCards'] = ({ searchTerm, tagIds }) => {
   return db.ankiCard.findMany({
     where: {
@@ -59,29 +68,40 @@ export const ankiCards: QueryResolvers['ankiCards'] = ({ searchTerm, tagIds }) =
   })
 }
 
+// ✅ Xóa thẻ
 export const deleteAnkiCard: MutationResolvers['deleteAnkiCard'] = async ({ id }) => {
   return db.ankiCard.delete({
     where: { id },
   })
 }
 
+// ✅ Thêm nhiều thẻ từ CSV
 export const bulkCreateAnkiCards: MutationResolvers['bulkCreateAnkiCards'] = async ({ input }) => {
   return Promise.all(
     input.map(async (card) => {
-      return db.ankiCard.create({
+      const newCard = await db.ankiCard.create({
         data: {
           front: card.front,
           back: card.back,
+          enrollAt: new Date(),
+          point: 0,
           tags: {
-            connect: [{ id: 1 }], // Gán mặc định tag ID = 0
+            connect: [{ id: 1 }],
           },
         },
-        include: { tags: true },
       })
+      return newCard
     })
   )
 }
 
-
-
-
+export const updateAnkiCardPoint: MutationResolvers['updateAnkiCardPoint'] = async ({ id, pointChange }) => {
+  return db.ankiCard.update({
+    where: { id },
+    data: {
+      point: {
+        increment: pointChange, // Cộng dồn vào điểm hiện tại
+      },
+    },
+  })
+}

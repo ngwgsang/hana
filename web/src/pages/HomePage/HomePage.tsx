@@ -1,6 +1,7 @@
 import { Metadata, useQuery, useMutation, gql } from '@redwoodjs/web'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Popup from 'src/components/Popup'
+import PingDot from 'src/components/PingDot'
 import { FunnelIcon, MagnifyingGlassIcon, PlusIcon, PencilSquareIcon } from '@heroicons/react/24/solid'
 import Papa from 'papaparse'
 
@@ -10,6 +11,8 @@ const GET_ANKI_CARDS = gql`
       id
       front
       back
+      createdAt
+      point
       tags {
         id
         name
@@ -35,6 +38,8 @@ const CREATE_ANKI_CARD = gql`
       id
       front
       back
+      enrollAt
+      point
       tags {
         id
         name
@@ -78,6 +83,32 @@ const BULK_CREATE_ANKI_CARDS = gql`
   }
 `
 
+const UPDATE_ANKI_CARD_POINT = gql`
+  mutation UpdateAnkiCardPoint($id: Int!, $pointChange: Int!) {
+    updateAnkiCardPoint(id: $id, pointChange: $pointChange) {
+      id
+      point
+    }
+  }
+`
+
+const CREATE_ANKI_TAG = gql`
+  mutation CreateAnkiTag($input: CreateAnkiTagInput!) {
+    createAnkiTag(input: $input) {
+      id
+      name
+    }
+  }
+`
+
+const DELETE_ANKI_TAG = gql`
+  mutation DeleteAnkiTag($id: Int!) {
+    deleteAnkiTag(id: $id) {
+      id
+    }
+  }
+`
+
 
 const HomePage = () => {
   const [searchTerm, setSearchTerm] = useState('')
@@ -95,6 +126,10 @@ const HomePage = () => {
   const [parsedCards, setParsedCards] = useState([]) // Danh sách thẻ đã parse từ CSV
   const [createAnkiCards] = useMutation(BULK_CREATE_ANKI_CARDS)
   const [isUploading, setIsUploading] = useState(false) // Trạng thái upload
+  const [newTagName, setNewTagName] = useState('')
+  const [isAddingTag, setIsAddingTag] = useState(false)
+  const [tags, setTags] = useState([])
+
 
 
 
@@ -110,10 +145,25 @@ const HomePage = () => {
   })
 
 
-  const { data: tagData } = useQuery(GET_ANKI_TAGS)
+
   const [createAnkiCard] = useMutation(CREATE_ANKI_CARD, { onCompleted: () => refetch() })
   const [updateAnkiCard] = useMutation(UPDATE_ANKI_CARD, { onCompleted: () => refetch() })
   const [deleteAnkiCard] = useMutation(DELETE_ANKI_CARD, { onCompleted: () => refetch() })
+  const [updateAnkiCardPoint] = useMutation(UPDATE_ANKI_CARD_POINT)
+  const { data: tagData } = useQuery(GET_ANKI_TAGS, {
+    onCompleted: (data) => {
+      if (data?.ankiTags) {
+        setTags(data.ankiTags)
+      }
+    }
+  })
+  const [createAnkiTag] = useMutation(CREATE_ANKI_TAG, {
+    onCompleted: () => refetch(), // Tải lại danh sách tag sau khi thêm
+  })
+  const [deleteAnkiTag] = useMutation(DELETE_ANKI_TAG, {
+    onCompleted: () => refetch(), // Tải lại danh sách tag sau khi xóa
+  })
+
 
   // Hàm tìm kiếm
   const handleSearch = () => {
@@ -123,7 +173,6 @@ const HomePage = () => {
 
     refetch({ searchTerm, tagIds: selectedTags, skip: 0, take }) // Gửi request mới
   }
-
 
   // Lazy Load khi scroll xuống cuối trang
   const handleLoadMore = () => {
@@ -248,6 +297,44 @@ const HomePage = () => {
     )
   }
 
+  const handleAddTag = async () => {
+    if (!newTagName.trim()) return // Không thêm tag rỗng
+
+    try {
+      const { data } = await createAnkiTag({
+        variables: { input: { name: newTagName } },
+      })
+
+      if (data?.createAnkiTag) {
+        // Cập nhật danh sách tag ngay lập tức
+        setTags([...tags, data.createAnkiTag])
+        setSelectedTags([...selectedTags, data.createAnkiTag.id]) // Nếu muốn chọn tag ngay khi tạo
+      }
+
+      setNewTagName('')
+      setIsAddingTag(false) // Ẩn ô nhập sau khi thêm
+    } catch (error) {
+      console.error('Lỗi khi thêm tag:', error)
+    }
+  }
+
+
+  const handleDeleteTag = async (tagId) => {
+    if (!confirm('Bạn có chắc chắn muốn xóa tag này?')) return
+
+    try {
+      await deleteAnkiTag({ variables: { id: tagId } })
+
+      // Cập nhật danh sách tag ngay lập tức
+      setTags(tags.filter(tag => tag.id !== tagId))
+      setSelectedTags(selectedTags.filter(id => id !== tagId)) // Xóa khỏi danh sách đã chọn
+    } catch (error) {
+      console.error('Lỗi khi xóa tag:', error)
+    }
+  }
+
+
+
   // Xử lý khi chọn file CSV
   const handleFileUpload = (event) => {
     const file = event.target.files[0]
@@ -297,6 +384,40 @@ const HomePage = () => {
     }
   }
 
+  const getTimeElapsedText = (timeStamp) => {
+    const now = new Date()
+    const cardTimestamp = new Date(timeStamp)
+    const timeDifference = now - cardTimestamp // Kết quả là số mili-giây
+    const minutesAgo = Math.floor(timeDifference / 1000 / 60) // Chuyển sang phút
+    const hoursAgo = Math.floor(timeDifference / 1000 / 60 / 60) // Chuyển sang giờ
+    if (minutesAgo < 1) return "Vừa xong"
+    if (hoursAgo < 24) return `${hoursAgo} giờ trước`
+    return ""
+  }
+
+  const handlePointUpdate = async (cardId, pointChange) => {
+    // Cập nhật UI ngay lập tức mà không cần reload
+    setCards((prevCards) =>
+      prevCards.map((card) =>
+        card.id === cardId ? { ...card, point: card.point + pointChange } : card
+      )
+    )
+
+    try {
+      await updateAnkiCardPoint({
+        variables: { id: cardId, pointChange },
+      })
+    } catch (error) {
+      console.error('Lỗi cập nhật điểm:', error)
+      // Nếu có lỗi, hoàn tác điểm
+      setCards((prevCards) =>
+        prevCards.map((card) =>
+          card.id === cardId ? { ...card, point: card.point - pointChange } : card
+        )
+      )
+    }
+  }
+
 
   return (
     <main className="p-4 mx-auto my-0 w-[50%]">
@@ -309,7 +430,7 @@ const HomePage = () => {
           placeholder="Tìm kiếm thẻ..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="p-2 border border-blue-600 rounded w-full text-black bg-slate-800 focus:outline-blue-700"
+          className="p-2 border border-blue-600 rounded w-full text-white bg-slate-800 focus:outline-blue-700"
         />
         <button
           onClick={() => setIsFilterVisible(!isFilterVisible)}
@@ -353,7 +474,10 @@ const HomePage = () => {
             className="p-4 bg-slate-700 rounded shadow relative group transition duration-300 hover:ring-2 hover:shadow-lg hover:shadow-blue-500/50 hover:bg-slate-800"
           >
             <h2 className="text-lg font-semibold text-white">{card.front}</h2>
+            <span className='absolute right-2 bottom-2 rounded text-sm text-blue-500'>{getTimeElapsedText(card.createdAt)}</span>
+            { card.point < 1 ? <PingDot className='absolute -left-1 top-1 -translate-y-1/2'></PingDot> : ""}
             <p className="text-slate-300">{card.back}</p>
+
             <div className="mt-2 text-sm text-blue-500">
               {card.tags
                 .slice() // Tạo một bản sao để tránh thay đổi dữ liệu gốc
@@ -361,6 +485,15 @@ const HomePage = () => {
                 .map((tag) => `#${tag.name} `)}
             </div>
 
+            {/* Điểm số */}
+            <div className="text-sm text-blue-500 mt-1">Điểm: {card.point}</div>
+
+            {/* Nút cập nhật điểm */}
+            <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 flex gap-2 bg-gray-800 p-2 rounded-lg shadow-lg transition-opacity duration-300">
+              <button onClick={() => handlePointUpdate(card.id, -1)} className="bg-gray-500 text-xl w-10 h-10 rounded hover:bg-gray-700">😵‍💫</button>
+              <button onClick={() => handlePointUpdate(card.id, 0)} className="bg-gray-500 text-xl w-10 h-10 rounded hover:bg-gray-700">🤯</button>
+              <button onClick={() => handlePointUpdate(card.id, 1)} className="bg-gray-500 text-xl w-10 h-10 rounded hover:bg-gray-700">😎</button>
+            </div>
 
             {/* Nút chỉnh sửa (ẩn mặc định, hiển thị khi hover) */}
             <button
@@ -446,16 +579,63 @@ const HomePage = () => {
             </label>
 
             <div>
-              <span className="font-bold text-slate-200">Tags</span>
-              <div className="grid grid-cols-2 gap-2 mt-2">
-                {tagData?.ankiTags.map((tag) => (
-                  <label key={tag.id} className="flex items-center gap-2 text-slate-300">
-                    <input type="checkbox" checked={selectedTags.includes(tag.id)} onChange={() => toggleTagSelection(tag.id)} />
-                    {tag.name}
-                  </label>
+              <div className='flex justify-between items-center'>
+                <span className="font-bold text-slate-200 ">Tags</span>
+                <button
+                  onClick={() => setIsAddingTag(prev => !prev)}
+                  className="p-2"
+                >
+                  <PlusIcon className='w-5 h-5 text-blue-600 rounded text-bold hover:text-white hover:bg-blue-600'/>
+                </button>
+              </div>
+              {/* Nút thêm tag */}
+              {!isAddingTag ? (
+                ""
+              ) : (
+                <div className="mt-2 flex gap-2">
+                  <input
+                    type="text"
+                    value={newTagName}
+                    onChange={(e) => setNewTagName(e.target.value)}
+                    className="p-2 border rounded w-full text-slate-300 bg-slate-900 outline-none"
+                    placeholder="Nhập tên tag..."
+                  />
+                  <button
+                    onClick={handleAddTag}
+                    className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
+                  >
+                    Lưu
+                  </button>
+                </div>
+              )}
+            </div>
+              <div className="grid grid-cols-2 gap-1">
+                {tags.map((tag) => (
+                  <div key={tag.id} className="flex items-center justify-between bg-gray-800 p-1 rounded group hover:bg-slate-700">
+                    <label className="flex items-center gap-2 text-slate-300">
+                      <input
+                        type="checkbox"
+                        checked={selectedTags.includes(tag.id)}
+                        onChange={() => toggleTagSelection(tag.id)}
+                      />
+                      {tag.name}
+                    </label>
+                    {
+                      tag.id != 1 ? (
+                        <button
+                          onClick={() => handleDeleteTag(tag.id)}
+                          className="text-red-500 hover:text-red-700 hidden group-hover:flex"
+                        >
+                          🗑️
+                        </button>
+                      ) : ""
+                    }
+
+                  </div>
                 ))}
               </div>
-            </div>
+
+
 
             <div className='flex gap-1 justify-between'>
               <button onClick={handleDelete} className="w-full px-4 py-2 bg-gray-300 text-gray-500 rounded hover:bg-red-700 hover:text-white">
