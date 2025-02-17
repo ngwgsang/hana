@@ -418,6 +418,14 @@ const HomePage = () => {
     }
   }
 
+  const HandleSpecialText = (text) => {
+    if (!text) return "";
+
+    return text
+      .replace(/\n/g, "<br />") // Chuyển đổi xuống dòng thành <br />
+      .replace(/\*\*(.*?)\*\*/g, "<b class='group-hover:bg-sky-500/30 rounded-sm'>$1</b>"); // Chuyển ****text**** thành <b>text</b>
+  };
+
 
   return (
     <main className="p-4 mx-auto my-0 w-[50%]">
@@ -476,7 +484,8 @@ const HomePage = () => {
             <h2 className="text-lg font-semibold text-white">{card.front}</h2>
             <span className='absolute right-2 bottom-2 rounded text-sm text-blue-500'>{getTimeElapsedText(card.createdAt)}</span>
             { card.point < 1 ? <PingDot className='absolute -left-1 top-1 -translate-y-1/2'></PingDot> : ""}
-            <p className="text-slate-300">{card.back}</p>
+            <div className="text-slate-300" dangerouslySetInnerHTML={{ __html: HandleSpecialText(card.back) }} />
+
 
             <div className="mt-2 text-sm text-blue-500">
               {card.tags
