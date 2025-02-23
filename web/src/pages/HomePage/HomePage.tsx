@@ -4,110 +4,18 @@ import Popup from 'src/components/Popup'
 import PingDot from 'src/components/PingDot'
 import { FunnelIcon, MagnifyingGlassIcon, PlusIcon, PencilSquareIcon } from '@heroicons/react/24/solid'
 import Papa from 'papaparse'
+import {
+  BULK_CREATE_ANKI_CARDS,
+  GET_ANKI_CARDS,
+  GET_ANKI_TAGS,
+  CREATE_ANKI_CARD,
+  CREATE_ANKI_TAG,
+  UPDATE_ANKI_CARD,
+  UPDATE_ANKI_CARD_POINT,
+  DELETE_ANKI_CARD,
+  DELETE_ANKI_TAG
+} from './HomPage.query'
 
-const GET_ANKI_CARDS = gql`
-  query GetAnkiCards($searchTerm: String, $tagIds: [Int!], $skip: Int, $take: Int) {
-    ankiCards(searchTerm: $searchTerm, tagIds: $tagIds, skip: $skip, take: $take) {
-      id
-      front
-      back
-      createdAt
-      point
-      tags {
-        id
-        name
-      }
-    }
-  }
-`
-
-// GraphQL Query lấy danh sách tag
-const GET_ANKI_TAGS = gql`
-  query GetAnkiTags {
-    ankiTags {
-      id
-      name
-    }
-  }
-`
-
-// Mutation tạo thẻ mới
-const CREATE_ANKI_CARD = gql`
-  mutation CreateAnkiCard($input: CreateAnkiCardInput!) {
-    createAnkiCard(input: $input) {
-      id
-      front
-      back
-      enrollAt
-      point
-      tags {
-        id
-        name
-      }
-    }
-  }
-`
-
-// Mutation cập nhật thẻ
-const UPDATE_ANKI_CARD = gql`
-  mutation UpdateAnkiCard($id: Int!, $input: UpdateAnkiCardInput!) {
-    updateAnkiCard(id: $id, input: $input) {
-      id
-      front
-      back
-      tags {
-        id
-        name
-      }
-    }
-  }
-`
-
-// Mutation xóa thẻ
-const DELETE_ANKI_CARD = gql`
-  mutation DeleteAnkiCard($id: Int!) {
-    deleteAnkiCard(id: $id) {
-      id
-    }
-  }
-`
-
-// Mutation thêm nhiều thẻ từ CSV
-const BULK_CREATE_ANKI_CARDS = gql`
-  mutation BulkCreateAnkiCards($input: [CreateAnkiCardInput!]!) {
-    bulkCreateAnkiCards(input: $input) {
-      id
-      front
-      back
-    }
-  }
-`
-
-const UPDATE_ANKI_CARD_POINT = gql`
-  mutation UpdateAnkiCardPoint($id: Int!, $pointChange: Int!) {
-    updateAnkiCardPoint(id: $id, pointChange: $pointChange) {
-      id
-      point
-    }
-  }
-`
-
-const CREATE_ANKI_TAG = gql`
-  mutation CreateAnkiTag($input: CreateAnkiTagInput!) {
-    createAnkiTag(input: $input) {
-      id
-      name
-    }
-  }
-`
-
-const DELETE_ANKI_TAG = gql`
-  mutation DeleteAnkiTag($id: Int!) {
-    deleteAnkiTag(id: $id) {
-      id
-    }
-  }
-`
 
 
 const HomePage = () => {
@@ -129,20 +37,48 @@ const HomePage = () => {
   const [newTagName, setNewTagName] = useState('')
   const [isAddingTag, setIsAddingTag] = useState(false)
   const [tags, setTags] = useState([])
+  const [hiddenCards, setHiddenCards] = useState([]);
 
 
 
 
+  // const { data, loading, error, fetchMore, refetch } = useQuery(GET_ANKI_CARDS, {
+  //   variables: { searchTerm: '', tagIds: [], skip: 0, take }, // Tải 10 thẻ ban đầu
+  //   onCompleted: (data) => {
+  //     if (data.ankiCards.length < take) setHasMore(false)
+  //     else setHasMore(true)
+
+  //     setCards(data.ankiCards)
+  //     setSkip(data.ankiCards.length) // Cập nhật skip
+  //   },
+  // })
   const { data, loading, error, fetchMore, refetch } = useQuery(GET_ANKI_CARDS, {
-    variables: { searchTerm: '', tagIds: [], skip: 0, take }, // Tải 10 thẻ ban đầu
+    variables: { searchTerm: '', tagIds: [], skip: 0, take },
     onCompleted: (data) => {
-      if (data.ankiCards.length < take) setHasMore(false)
-      else setHasMore(true)
+      if (!data?.ankiCards) return;
 
-      setCards(data.ankiCards)
-      setSkip(data.ankiCards.length) // Cập nhật skip
+      const currentDate = new Date();
+      const alpha = 0.33; // Trọng số ảnh hưởng của enrollAt
+
+      const sortedCards = data.ankiCards.map((card) => {
+        // Kiểm tra nếu enrollAt hợp lệ, nếu không gán giá trị mặc định
+        const enrollDate = card.enrollAt ? new Date(card.enrollAt) : new Date();
+        const daysSinceEnroll = isNaN(enrollDate) ? 0 : (currentDate - enrollDate) / (1000 * 60 * 60 * 24);
+
+        // Đảm bảo point là số hợp lệ
+        const point = card.point !== null && !isNaN(card.point) ? parseInt(card.point, 10) : 0;
+
+        return {
+          ...card,
+          reviewScore: point + alpha * daysSinceEnroll,
+        };
+      }).sort((a, b) => a.reviewScore - b.reviewScore); // Sắp xếp tăng dần theo reviewScore
+
+      setCards(sortedCards);
+      setSkip(sortedCards.length);
+      setHasMore(sortedCards.length >= take);
     },
-  })
+  });
 
 
 
@@ -261,6 +197,7 @@ const HomePage = () => {
       await createAnkiCard({
         variables: {
           input: {
+            point: -3,
             front: editingCard.front,
             back: editingCard.back,
             tagIds: selectedTags,
@@ -272,6 +209,7 @@ const HomePage = () => {
         variables: {
           id: editingCard.id,
           input: {
+            point: -3,
             front: editingCard.front,
             back: editingCard.back,
             tagIds: selectedTags, // Lưu danh sách tag được chọn
@@ -333,8 +271,6 @@ const HomePage = () => {
     }
   }
 
-
-
   // Xử lý khi chọn file CSV
   const handleFileUpload = (event) => {
     const file = event.target.files[0]
@@ -391,32 +327,46 @@ const HomePage = () => {
     const minutesAgo = Math.floor(timeDifference / 1000 / 60) // Chuyển sang phút
     const hoursAgo = Math.floor(timeDifference / 1000 / 60 / 60) // Chuyển sang giờ
     if (minutesAgo < 1) return "Vừa xong"
+    if (minutesAgo < 60) return `${minutesAgo} phút trước`
     if (hoursAgo < 24) return `${hoursAgo} giờ trước`
     return ""
   }
 
   const handlePointUpdate = async (cardId, pointChange) => {
-    // Cập nhật UI ngay lập tức mà không cần reload
-    setCards((prevCards) =>
-      prevCards.map((card) =>
-        card.id === cardId ? { ...card, point: card.point + pointChange } : card
-      )
-    )
+    // Ẩn thẻ ngay lập tức
+    setHiddenCards((prevHidden) => [...prevHidden, cardId]);
+
+    if (pointChange === 1) {
+      setCards((prevCards) =>
+        prevCards.map((card) =>
+          card.id === cardId ? { ...card, point: 2 } : card
+        )
+      );
+    } else if (pointChange === -1) {
+      setCards((prevCards) =>
+        prevCards.map((card) =>
+          card.id === cardId ? { ...card, point: card.point + pointChange } : card
+        )
+      );
+    } else {
+      setCards((prevCards) =>
+        prevCards.map((card) =>
+          card.id === cardId ? { ...card, point: 0 } : card
+        )
+      );
+    }
 
     try {
       await updateAnkiCardPoint({
         variables: { id: cardId, pointChange },
-      })
+      });
     } catch (error) {
-      console.error('Lỗi cập nhật điểm:', error)
-      // Nếu có lỗi, hoàn tác điểm
-      setCards((prevCards) =>
-        prevCards.map((card) =>
-          card.id === cardId ? { ...card, point: card.point - pointChange } : card
-        )
-      )
+      console.error('Lỗi cập nhật điểm:', error);
+      // Nếu có lỗi, hiển thị lại thẻ
+      setHiddenCards((prevHidden) => prevHidden.filter((id) => id !== cardId));
     }
-  }
+  };
+
 
   const HandleSpecialText = (text) => {
     if (!text) return "";
@@ -479,15 +429,16 @@ const HomePage = () => {
           <div
             ref={index === cards.length - 1 ? lastCardRef : null}
             key={card.id}
-            className="p-4 bg-slate-700 rounded shadow relative group transition duration-300 hover:ring-2 hover:shadow-lg hover:shadow-blue-500/50 hover:bg-slate-800"
-          >
+            className={`p-4 bg-slate-700 rounded shadow relative group transition duration-300
+              hover:ring-2 hover:shadow-lg hover:shadow-blue-500/50 hover:bg-slate-800
+              ${hiddenCards.includes(card.id) ? 'hidden' : ''}`} >
             <h2 className="text-lg font-semibold text-white">{card.front}</h2>
             <span className='absolute right-2 bottom-2 rounded text-sm text-blue-500'>{getTimeElapsedText(card.createdAt)}</span>
-            { card.point < 1 ? <PingDot className='absolute -left-1 top-1 -translate-y-1/2'></PingDot> : ""}
+            { getTimeElapsedText(card.createdAt) != "" ? <PingDot className='absolute -left-1 top-1 -translate-y-1/2'></PingDot> : ""}
             <div className="text-slate-300" dangerouslySetInnerHTML={{ __html: HandleSpecialText(card.back) }} />
 
 
-            <div className="mt-2 text-sm text-blue-500">
+            <div className="my-2 text-sm text-blue-500">
               {card.tags
                 .slice() // Tạo một bản sao để tránh thay đổi dữ liệu gốc
                 .sort((a, b) => a.name.localeCompare(b.name)) // Sắp xếp theo thứ tự bảng chữ cái
@@ -495,7 +446,10 @@ const HomePage = () => {
             </div>
 
             {/* Điểm số */}
-            <div className="text-sm text-blue-500 mt-1">Điểm: {card.point}</div>
+            <span className="text-sm text-white border border-slate-400 bg-slate-600 mt-2 p-1 rounded-md w-auto">
+              <span>{ card.point <= 0 ? "😱" : "😊"  }</span>
+              <span>{card.reviewScore !== undefined ? card.reviewScore.toFixed(1) : 'N/A'}</span>
+            </span>
 
             {/* Nút cập nhật điểm */}
             <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 flex gap-2 bg-gray-800 p-2 rounded-lg shadow-lg transition-opacity duration-300">

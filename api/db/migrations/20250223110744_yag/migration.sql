@@ -14,7 +14,7 @@ DROP INDEX "AnkiCard_scheduleId_key";
 -- AlterTable
 ALTER TABLE "AnkiCard" DROP COLUMN "scheduleId",
 ADD COLUMN     "enrollAt" TIMESTAMP(3),
-ADD COLUMN     "point" INTEGER NOT NULL DEFAULT 0;
+ADD COLUMN     "point" INTEGER NOT NULL DEFAULT -3;
 
 -- DropTable
 DROP TABLE "AnkiSch";

@@ -1,0 +1,119 @@
+import { gql } from '@redwoodjs/web'
+
+
+
+const GET_ANKI_CARDS = gql`
+  query GetAnkiCards($searchTerm: String, $tagIds: [Int!], $skip: Int, $take: Int) {
+    ankiCards(searchTerm: $searchTerm, tagIds: $tagIds, skip: $skip, take: $take) {
+      id
+      front
+      back
+      createdAt
+      point
+      tags {
+        id
+        name
+      }
+    }
+  }
+`
+
+// GraphQL Query lấy danh sách tag
+const GET_ANKI_TAGS = gql`
+  query GetAnkiTags {
+    ankiTags {
+      id
+      name
+    }
+  }
+`
+
+// Mutation tạo thẻ mới
+const CREATE_ANKI_CARD = gql`
+  mutation CreateAnkiCard($input: CreateAnkiCardInput!) {
+    createAnkiCard(input: $input) {
+      id
+      front
+      back
+      enrollAt
+      point
+      tags {
+        id
+        name
+      }
+    }
+  }
+`
+
+// Mutation cập nhật thẻ
+const UPDATE_ANKI_CARD = gql`
+  mutation UpdateAnkiCard($id: Int!, $input: UpdateAnkiCardInput!) {
+    updateAnkiCard(id: $id, input: $input) {
+      id
+      front
+      back
+      tags {
+        id
+        name
+      }
+    }
+  }
+`
+
+// Mutation xóa thẻ
+const DELETE_ANKI_CARD = gql`
+  mutation DeleteAnkiCard($id: Int!) {
+    deleteAnkiCard(id: $id) {
+      id
+    }
+  }
+`
+
+// Mutation thêm nhiều thẻ từ CSV
+const BULK_CREATE_ANKI_CARDS = gql`
+  mutation BulkCreateAnkiCards($input: [CreateAnkiCardInput!]!) {
+    bulkCreateAnkiCards(input: $input) {
+      id
+      front
+      back
+    }
+  }
+`
+
+const UPDATE_ANKI_CARD_POINT = gql`
+  mutation UpdateAnkiCardPoint($id: Int!, $pointChange: Int!) {
+    updateAnkiCardPoint(id: $id, pointChange: $pointChange) {
+      id
+      point
+    }
+  }
+`
+
+const CREATE_ANKI_TAG = gql`
+  mutation CreateAnkiTag($input: CreateAnkiTagInput!) {
+    createAnkiTag(input: $input) {
+      id
+      name
+    }
+  }
+`
+
+const DELETE_ANKI_TAG = gql`
+  mutation DeleteAnkiTag($id: Int!) {
+    deleteAnkiTag(id: $id) {
+      id
+    }
+  }
+`
+
+export {
+  BULK_CREATE_ANKI_CARDS,
+  GET_ANKI_CARDS,
+  GET_ANKI_TAGS,
+  CREATE_ANKI_CARD,
+  CREATE_ANKI_TAG,
+  UPDATE_ANKI_CARD,
+  UPDATE_ANKI_CARD_POINT,
+  DELETE_ANKI_CARD,
+  DELETE_ANKI_TAG
+}

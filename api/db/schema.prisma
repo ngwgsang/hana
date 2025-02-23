@@ -61,7 +61,7 @@ model AnkiCard {
   tags      AnkiTag[]                               // Quan hệ nhiều-nhiều với tag (không cần references)
   createdAt DateTime  @default(now())              // Ngày tạo thẻ
   enrollAt  DateTime?                            // Ngày bắt đầu luyện tập
-  point     Int       @default(0)                 // Điểm số cho lịch trình
+  point     Int       @default(-3)                 // Điểm số cho lịch trình
 }
 
 model AnkiTag {
