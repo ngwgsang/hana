@@ -52,6 +52,7 @@ const UPDATE_ANKI_CARD = gql`
       id
       front
       back
+      point
       tags {
         id
         name

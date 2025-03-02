@@ -40,8 +40,6 @@ const HomePage = () => {
   const [hiddenCards, setHiddenCards] = useState([]);
 
 
-
-
   // const { data, loading, error, fetchMore, refetch } = useQuery(GET_ANKI_CARDS, {
   //   variables: { searchTerm: '', tagIds: [], skip: 0, take }, // Tải 10 thẻ ban đầu
   //   onCompleted: (data) => {
@@ -79,7 +77,6 @@ const HomePage = () => {
       setHasMore(sortedCards.length >= take);
     },
   });
-
 
 
   const [createAnkiCard] = useMutation(CREATE_ANKI_CARD, { onCompleted: () => refetch() })
@@ -193,37 +190,42 @@ const HomePage = () => {
 
   // Cập nhật hoặc thêm mới thẻ
   const handleSave = async () => {
+    setIsUploading(true);
     if (isAdding) {
       await createAnkiCard({
         variables: {
           input: {
-            point: -3,
             front: editingCard.front,
             back: editingCard.back,
             tagIds: selectedTags,
+            point: -3, // 🔥 Đảm bảo thẻ mới có point = -3
           },
         },
-      })
+      });
     } else {
       await updateAnkiCard({
         variables: {
           id: editingCard.id,
           input: {
-            point: -3,
             front: editingCard.front,
             back: editingCard.back,
-            tagIds: selectedTags, // Lưu danh sách tag được chọn
+            tagIds: selectedTags,
+            point: -1, // 🔥 Đảm bảo update cũng có point = -3
           },
         },
-      })
+      });
     }
-    handleClosePopup()
-  }
+    setIsUploading(false);
+    handleClosePopup();
+  };
+
 
   // Xóa thẻ
   const handleDelete = async () => {
     if (confirm('Bạn có chắc chắn muốn xóa thẻ này?')) {
+      setIsUploading(true);
       await deleteAnkiCard({ variables: { id: editingCard.id } })
+      setIsUploading(false);
       handleClosePopup()
     }
   }
@@ -294,31 +296,31 @@ const HomePage = () => {
   // Gửi dữ liệu lên server để thêm vào database
   const handleUploadCSV = async () => {
     if (parsedCards.length === 0) {
-      alert('Không có dữ liệu để thêm!')
-      return
+      alert('Không có dữ liệu để thêm!');
+      return;
     }
-    setIsUploading(true) // Bật trạng thái loading
-
+    setIsUploading(true); // Bật trạng thái loading
 
     const formattedCards = parsedCards.map((card) => ({
       front: card.front,
       back: card.back,
-      tagIds: [1], // Gán mặc định tag ID = 0
-    }))
+      tagIds: [1], // Gán mặc định tag ID = 1
+      point: -3, // 🔥 Đảm bảo thẻ từ CSV cũng có point = -3
+    }));
 
     try {
       await createAnkiCards({
         variables: { input: formattedCards },
-      })
-      alert('Đã thêm thẻ thành công!')
-      setIsPopupOpen(false)
-      setParsedCards([]) // Reset danh sách
+      });
+      alert('Đã thêm thẻ thành công!');
+      setIsPopupOpen(false);
+      setParsedCards([]); // Reset danh sách
     } catch (error) {
-      console.error('Lỗi khi thêm thẻ:', error)
+      console.error('Lỗi khi thêm thẻ:', error);
     } finally {
-      setIsUploading(false) // Tắt trạng thái loading
+      setIsUploading(false); // Tắt trạng thái loading
     }
-  }
+  };
 
   const getTimeElapsedText = (timeStamp) => {
     const now = new Date()
@@ -328,7 +330,6 @@ const HomePage = () => {
     const hoursAgo = Math.floor(timeDifference / 1000 / 60 / 60) // Chuyển sang giờ
     if (minutesAgo < 1) return "Vừa xong"
     if (minutesAgo < 60) return `${minutesAgo} phút trước`
-    if (hoursAgo < 24) return `${hoursAgo} giờ trước`
     return ""
   }
 
@@ -378,7 +379,7 @@ const HomePage = () => {
 
 
   return (
-    <main className="p-4 mx-auto my-0 w-[50%]">
+    <main className="p-4 mx-auto my-0 w-[85%] md:w-[75%] lg:w-[50%]">
       <Metadata title="Home" description="Home page" />
 
       {/* Thanh tìm kiếm + nút lọc */}
@@ -448,7 +449,7 @@ const HomePage = () => {
             {/* Điểm số */}
             <span className="text-sm text-white border border-slate-400 bg-slate-600 mt-2 p-1 rounded-md w-auto">
               <span>{ card.point <= 0 ? "😱" : "😊"  }</span>
-              <span>{card.reviewScore !== undefined ? card.reviewScore.toFixed(1) : 'N/A'}</span>
+              {/* <span>{card.reviewScore !== undefined ? card.reviewScore.toFixed(1) : 'N/A'}</span> */}
             </span>
 
             {/* Nút cập nhật điểm */}
@@ -497,22 +498,19 @@ const HomePage = () => {
           {/* Nếu chọn thêm CSV */}
           {isAddingCSV ? (
             <div className="flex flex-col gap-3">
-              <input type="file" accept=".csv" onChange={handleFileUpload} className="border p-2 rounded" />
+              <input type="file" accept=".csv" onChange={handleFileUpload} className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-600 dark:border-gray-600 dark:placeholder-gray-400" />
               {parsedCards.length > 0 && (
                 <p className="text-sm text-gray-500">{parsedCards.length} thẻ sẽ được thêm</p>
               )}
               <button
                 onClick={handleUploadCSV}
                 disabled={isUploading} // Vô hiệu hóa khi đang tải
-                className={`px-4 py-2 rounded text-white ${isUploading ? 'bg-gray-500' : 'bg-green-600 hover:bg-green-700'}`}
+                className={`px-4 py-2 rounded text-white bg-blue-600 hover:bg-blue-700`}
               >
                 {isUploading ? (
-                  <div className="flex items-center gap-2">
-                    <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 0116 0"></path>
-                    </svg>
-                    Đang tải lên...
+                  <div className="flex items-center gap-2 text-white">
+                    <span className='animate-bounce text-white'>🐳</span>
+                    <span className='animate-pulse'>Đang cập nhập...</span>
                   </div>
                 ) : (
                   'Xác nhận thêm thẻ'
@@ -598,15 +596,22 @@ const HomePage = () => {
                 ))}
               </div>
 
-
-
             <div className='flex gap-1 justify-between'>
-              <button onClick={handleDelete} className="w-full px-4 py-2 bg-gray-300 text-gray-500 rounded hover:bg-red-700 hover:text-white">
-                Xóa
-              </button>
-              <button onClick={handleSave} className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-                Lưu
-              </button>
+              {isUploading ? (
+                  <div className="flex items-center gap-2 text-white">
+                    <span className='animate-bounce text-white'>🐳</span>
+                    <span className='animate-pulse'>Đang cập nhập...</span>
+                  </div>
+                ) : (
+                  <>
+                    <button onClick={handleDelete} className="w-full px-4 py-2 bg-gray-300 text-gray-500 rounded hover:bg-red-700 hover:text-white">
+                      Xóa
+                    </button>
+                    <button onClick={handleSave} className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                      Lưu
+                    </button>
+                  </>
+                )}
             </div>
           </div>
           )}

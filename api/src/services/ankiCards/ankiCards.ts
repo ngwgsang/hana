@@ -8,7 +8,7 @@ export const createAnkiCard: MutationResolvers['createAnkiCard'] = async ({ inpu
       front: input.front,
       back: input.back,
       enrollAt: new Date(),
-      point: 0, // Điểm ban đầu là 0
+      point: -3, // Điểm ban đầu là 0
       tags: input.tagIds?.length
         ? { connect: input.tagIds.map((tagId) => ({ id: tagId })) }
         : undefined, // Nếu có tag thì gán, nếu không thì bỏ qua
@@ -84,7 +84,7 @@ export const bulkCreateAnkiCards: MutationResolvers['bulkCreateAnkiCards'] = asy
           front: card.front,
           back: card.back,
           enrollAt: new Date(),
-          point: 0,
+          point: -3,
           tags: {
             connect: [{ id: 1 }],
           },
