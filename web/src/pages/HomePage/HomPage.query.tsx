@@ -3,8 +3,8 @@ import { gql } from '@redwoodjs/web'
 
 
 const GET_ANKI_CARDS = gql`
-  query GetAnkiCards($searchTerm: String, $tagIds: [Int!], $skip: Int, $take: Int) {
-    ankiCards(searchTerm: $searchTerm, tagIds: $tagIds, skip: $skip, take: $take) {
+  query GetAnkiCards($searchTerm: String, $tagIds: [Int!]) {
+    ankiCards(searchTerm: $searchTerm, tagIds: $tagIds) {
       id
       front
       back

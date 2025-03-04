@@ -1,8 +1,11 @@
 import { Metadata, useQuery, useMutation, gql } from '@redwoodjs/web'
+import { Link, useLocation} from '@redwoodjs/router'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Popup from 'src/components/Popup'
 import PingDot from 'src/components/PingDot'
-import { FunnelIcon, MagnifyingGlassIcon, PlusIcon, PencilSquareIcon } from '@heroicons/react/24/solid'
+import ExternalUrl from 'src/components/ExternalUrl'
+import LoadingAnimation from 'src/components/LoadingAnimation'
+import { FunnelIcon, MagnifyingGlassIcon, PlusIcon, PencilSquareIcon, CloudArrowDownIcon, Squares2X2Icon } from '@heroicons/react/24/solid'
 import Papa from 'papaparse'
 import {
   BULK_CREATE_ANKI_CARDS,
@@ -15,6 +18,7 @@ import {
   DELETE_ANKI_CARD,
   DELETE_ANKI_TAG
 } from './HomPage.query'
+import { Router } from '@redwoodjs/router/serverRouter'
 
 
 
@@ -26,10 +30,6 @@ const HomePage = () => {
   const [selectedTags, setSelectedTags] = useState([])
   const [isFilterVisible, setIsFilterVisible] = useState(false) // Toggle hiển thị bộ lọc
   const [cards, setCards] = useState([]) // Danh sách thẻ hiển thị
-  const [skip, setSkip] = useState(0) // Bỏ qua số lượng đã tải
-  const take = 10 // Ban đầu tải 10 thẻ
-  const [hasMore, setHasMore] = useState(true) // Kiểm tra còn dữ liệu không
-  const isFetching = useRef(false) // Chặn việc gọi API liên tục
   const [isAddingCSV, setIsAddingCSV] = useState(false) // Kiểm tra trạng thái upload CSV
   const [parsedCards, setParsedCards] = useState([]) // Danh sách thẻ đã parse từ CSV
   const [createAnkiCards] = useMutation(BULK_CREATE_ANKI_CARDS)
@@ -38,20 +38,20 @@ const HomePage = () => {
   const [isAddingTag, setIsAddingTag] = useState(false)
   const [tags, setTags] = useState([])
   const [hiddenCards, setHiddenCards] = useState([]);
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const tagFromURL = searchParams.get('tag'); // Lấy giá trị tag từ URL
 
 
-  // const { data, loading, error, fetchMore, refetch } = useQuery(GET_ANKI_CARDS, {
-  //   variables: { searchTerm: '', tagIds: [], skip: 0, take }, // Tải 10 thẻ ban đầu
-  //   onCompleted: (data) => {
-  //     if (data.ankiCards.length < take) setHasMore(false)
-  //     else setHasMore(true)
+  // Khi URL thay đổi, tự động refetch dữ liệu
+  useEffect(() => {
+    const tagId = tagFromURL ? parseInt(tagFromURL, 10) : null;
+    refetch({ searchTerm, tagIds: tagId ? [tagId] : [] });
+  }, [tagFromURL]);
 
-  //     setCards(data.ankiCards)
-  //     setSkip(data.ankiCards.length) // Cập nhật skip
-  //   },
-  // })
-  const { data, loading, error, fetchMore, refetch } = useQuery(GET_ANKI_CARDS, {
-    variables: { searchTerm: '', tagIds: [], skip: 0, take },
+
+  const { data, loading, error, refetch } = useQuery(GET_ANKI_CARDS, {
+    variables: { searchTerm: '', tagIds: [] }, // Không cần skip/take nữa
     onCompleted: (data) => {
       if (!data?.ankiCards) return;
 
@@ -59,25 +59,16 @@ const HomePage = () => {
       const alpha = 0.33; // Trọng số ảnh hưởng của enrollAt
 
       const sortedCards = data.ankiCards.map((card) => {
-        // Kiểm tra nếu enrollAt hợp lệ, nếu không gán giá trị mặc định
         const enrollDate = card.enrollAt ? new Date(card.enrollAt) : new Date();
         const daysSinceEnroll = isNaN(enrollDate) ? 0 : (currentDate - enrollDate) / (1000 * 60 * 60 * 24);
-
-        // Đảm bảo point là số hợp lệ
         const point = card.point !== null && !isNaN(card.point) ? parseInt(card.point, 10) : 0;
 
-        return {
-          ...card,
-          reviewScore: point + alpha * daysSinceEnroll,
-        };
+        return { ...card, reviewScore: point + alpha * daysSinceEnroll };
       }).sort((a, b) => a.reviewScore - b.reviewScore); // Sắp xếp tăng dần theo reviewScore
 
       setCards(sortedCards);
-      setSkip(sortedCards.length);
-      setHasMore(sortedCards.length >= take);
     },
   });
-
 
   const [createAnkiCard] = useMutation(CREATE_ANKI_CARD, { onCompleted: () => refetch() })
   const [updateAnkiCard] = useMutation(UPDATE_ANKI_CARD, { onCompleted: () => refetch() })
@@ -97,75 +88,10 @@ const HomePage = () => {
     onCompleted: () => refetch(), // Tải lại danh sách tag sau khi xóa
   })
 
-
-  // Hàm tìm kiếm
+  // Hàm tìm kiếm thủ công
   const handleSearch = () => {
-    setCards([]) // Xóa danh sách cũ trước khi tải dữ liệu mới
-    setSkip(0)   // Reset skip để tải từ đầu
-    setHasMore(true) // Đảm bảo vẫn có thể tải thêm dữ liệu
-
-    refetch({ searchTerm, tagIds: selectedTags, skip: 0, take }) // Gửi request mới
-  }
-
-  // Lazy Load khi scroll xuống cuối trang
-  const handleLoadMore = () => {
-    if (!hasMore || isFetching.current) return // Kiểm tra nếu hết dữ liệu hoặc đang tải thì không gọi API
-
-    isFetching.current = true // Đánh dấu là đang fetch
-
-    fetchMore({
-      variables: { searchTerm, tagIds: selectedTags, skip, take: 5 },
-      updateQuery: (prev, { fetchMoreResult }) => {
-        isFetching.current = false // Reset trạng thái fetch
-
-        if (!fetchMoreResult || fetchMoreResult.ankiCards.length === 0) {
-          setHasMore(false)
-          return prev
-        }
-
-        setSkip(prev => prev + fetchMoreResult.ankiCards.length)
-        return {
-          ...prev,
-          ankiCards: [...prev.ankiCards, ...fetchMoreResult.ankiCards],
-        }
-      },
-    })
-  }
-
-
-  // Lazy Load khi scroll
-  const observer = useRef()
-  const lastCardRef = useCallback(
-    (node) => {
-      if (loading) return
-      if (observer.current) observer.current.disconnect()
-
-      observer.current = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting) {
-          handleLoadMore() // Gọi API khi cuộn đến thẻ cuối
-        }
-      })
-
-      if (node) observer.current.observe(node)
-    },
-    [loading, fetchMore, skip, searchTerm, selectedTags]
-  )
-
-
-  useEffect(() => {
-    const handleScroll = () => {
-      if (
-        window.innerHeight + window.scrollY >= document.body.offsetHeight - 200 &&
-        !loading
-      ) {
-        handleLoadMore()
-      }
-    }
-
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [loading, hasMore])
-
+    refetch({ searchTerm, tagIds: tagFromURL ? [parseInt(tagFromURL, 10)] : [] });
+  };
 
   // Mở popup chỉnh sửa
   const handleEdit = (card) => {
@@ -191,6 +117,9 @@ const HomePage = () => {
   // Cập nhật hoặc thêm mới thẻ
   const handleSave = async () => {
     setIsUploading(true);
+    if (selectedTags.length === 0) {
+      selectedTags.push(1)
+    }
     if (isAdding) {
       await createAnkiCard({
         variables: {
@@ -322,6 +251,35 @@ const HomePage = () => {
     }
   };
 
+  const handleExportCSV = () => {
+    if (cards.length === 0) {
+      alert("Không có dữ liệu để xuất!");
+      return;
+    }
+
+    // Chuyển danh sách thẻ thành định dạng CSV
+    const csvData = cards.map(card => ({
+      front: card.front,
+      back: card.back
+    }));
+
+    // Chuyển đổi dữ liệu sang chuỗi CSV
+    const csvString = Papa.unparse(csvData, { header: true });
+
+    // Tạo Blob để tải xuống file CSV
+    const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+
+    // Tạo thẻ <a> để tự động tải file
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `anki_cards_${new Date().toISOString()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+
   const getTimeElapsedText = (timeStamp) => {
     const now = new Date()
     const cardTimestamp = new Date(timeStamp)
@@ -422,18 +380,18 @@ const HomePage = () => {
       )}
 
       {/* Hiển thị danh sách thẻ */}
-      {loading && <p className="text-gray-400">Đang tải dữ liệu...</p>}
+      <LoadingAnimation state={loading} texts={['Đang tải dữ liệu...', '']} />
       {error && <p className="text-red-500">Lỗi: {error.message}</p>}
 
       <div className="grid grid-cols-1 gap-4">
         {cards.map((card, index) => (
           <div
-            ref={index === cards.length - 1 ? lastCardRef : null}
             key={card.id}
             className={`p-4 bg-slate-700 rounded shadow relative group transition duration-300
               hover:ring-2 hover:shadow-lg hover:shadow-blue-500/50 hover:bg-slate-800
               ${hiddenCards.includes(card.id) ? 'hidden' : ''}`} >
-            <h2 className="text-lg font-semibold text-white">{card.front}</h2>
+            {/* <h2 className="text-lg font-semibold text-white">{card.front}</h2> */}
+            <ExternalUrl className="text-lg font-semibold text-white" href={`https://mazii.net/vi-VN/search/word/javi/${card.front}`}>{card.front}</ExternalUrl>
             <span className='absolute right-2 bottom-2 rounded text-sm text-blue-500'>{getTimeElapsedText(card.createdAt)}</span>
             { getTimeElapsedText(card.createdAt) != "" ? <PingDot className='absolute -left-1 top-1 -translate-y-1/2'></PingDot> : ""}
             <div className="text-slate-300" dangerouslySetInnerHTML={{ __html: HandleSpecialText(card.back) }} />
@@ -507,14 +465,7 @@ const HomePage = () => {
                 disabled={isUploading} // Vô hiệu hóa khi đang tải
                 className={`px-4 py-2 rounded text-white bg-blue-600 hover:bg-blue-700`}
               >
-                {isUploading ? (
-                  <div className="flex items-center gap-2 text-white">
-                    <span className='animate-bounce text-white'>🐳</span>
-                    <span className='animate-pulse'>Đang cập nhập...</span>
-                  </div>
-                ) : (
-                  'Xác nhận thêm thẻ'
-                )}
+                <LoadingAnimation state={isUploading} texts={['Đang cập nhập...2', 'Xác nhận thêm thẻ2']}/>
               </button>
             </div>
           ) : editingCard && (
@@ -597,13 +548,8 @@ const HomePage = () => {
               </div>
 
             <div className='flex gap-1 justify-between'>
-              {isUploading ? (
-                  <div className="flex items-center gap-2 text-white">
-                    <span className='animate-bounce text-white'>🐳</span>
-                    <span className='animate-pulse'>Đang cập nhập...</span>
-                  </div>
-                ) : (
-                  <>
+              <LoadingAnimation state={isUploading} texts={['Đang cập nhập...', (
+                    <>
                     <button onClick={handleDelete} className="w-full px-4 py-2 bg-gray-300 text-gray-500 rounded hover:bg-red-700 hover:text-white">
                       Xóa
                     </button>
@@ -611,7 +557,7 @@ const HomePage = () => {
                       Lưu
                     </button>
                   </>
-                )}
+                )]}/>
             </div>
           </div>
           )}
@@ -619,10 +565,32 @@ const HomePage = () => {
 
       </Popup>
 
-      {/* Nút thêm thẻ */}
-      <button onClick={handleAdd} className="fixed right-2 bottom-2 bg-blue-600 text-white rounded hover:bg-blue-700 p-2">
-        <PlusIcon className="h-6 w-6 text-white"></PlusIcon>
-      </button>
+      <div className='fixed right-2 bottom-2 flex gap-2 flex-col-reverse transition-transform'>
+        {/* Nút thêm thẻ */}
+        <button onClick={handleAdd} className=" bg-blue-600 text-white rounded hover:bg-blue-700 p-2">
+          <PlusIcon className="h-6 w-6 text-white"></PlusIcon>
+        </button>
+
+        {/* Nút xuất thẻ */}
+        <button
+          onClick={handleExportCSV}
+          className="text-white rounded bg-blue-600 hover:bg-blue-700  p-2"
+        >
+          <CloudArrowDownIcon className="h-6 w-6 text-white"/>
+        </button>
+
+        {/* Nút thư viện */}
+        <Link
+          to='/library'
+          className="text-white rounded bg-blue-600 hover:bg-blue-700 p-2"
+        >
+          <Squares2X2Icon className="h-6 w-6 text-white"/>
+        </Link>
+      </div>
+
+
+
+
     </main>
   )
 }

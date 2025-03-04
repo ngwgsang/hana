@@ -1,12 +1,12 @@
 import { ReactNode } from 'react'
 
-interface ButtonProps {
+interface iButton {
   children: ReactNode
   onClick?: () => void  // Tùy chọn: thêm sự kiện onClick nếu cần
   className?: string    // Tùy chọn: mở rộng thêm class
 }
 
-const Button = ({ children, onClick, className }: ButtonProps) => {
+const Button = ({ children, onClick, className }: iButton) => {
   return (
     <button
       onClick={onClick}

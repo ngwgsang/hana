@@ -9,6 +9,7 @@
 
 import { Set, Router, Route } from '@redwoodjs/router'
 import Home from 'src/pages/HomePage'
+import LibraryPage from './pages/LibraryPage'
 
 const Routes = () => {
   return (
@@ -16,6 +17,7 @@ const Routes = () => {
       <Route path="/chat" page={ChatPage} name="chat" />
       <Route path="/agents" page={AgentsPage} name="agents" />
       <Route path="/home" page={Home} name="home" />
+      <Route path="/library" page={LibraryPage} name="library" />
       <Route notfound page={NotFoundPage} />
     </Router>
   )
