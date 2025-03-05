@@ -1,5 +1,6 @@
 import { Metadata, useQuery, useMutation, gql } from '@redwoodjs/web'
-import { Link, useLocation} from '@redwoodjs/router'
+import { Link, useLocation , navigate} from '@redwoodjs/router'
+import { useGlobal } from 'src/context/GlobalContext'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Popup from 'src/components/Popup'
 import PingDot from 'src/components/PingDot'
@@ -42,6 +43,13 @@ const HomePage = () => {
   const searchParams = new URLSearchParams(location.search);
   const tagFromURL = searchParams.get('tag'); // Lấy giá trị tag từ URL
 
+
+  const global = useGlobal();
+  useEffect(() => {
+    if (global.isAuth == false) {
+      navigate("/login")
+    }
+  }, [])
 
   // Khi URL thay đổi, tự động refetch dữ liệu
   useEffect(() => {
@@ -337,7 +345,7 @@ const HomePage = () => {
 
 
   return (
-    <main className="p-4 mx-auto my-0 w-[85%] md:w-[75%] lg:w-[50%]">
+    <main className="p-4 mx-auto my-0 w-full sm:w-[85%] md:w-[75%] lg:w-[50%]">
       <Metadata title="Home" description="Home page" />
 
       {/* Thanh tìm kiếm + nút lọc */}
@@ -574,7 +582,7 @@ const HomePage = () => {
         {/* Nút xuất thẻ */}
         <button
           onClick={handleExportCSV}
-          className="text-white rounded bg-blue-600 hover:bg-blue-700  p-2"
+          className="text-white rounded bg-blue-600 hover:bg-blue-700 p-2 hidden sm:flex"
         >
           <CloudArrowDownIcon className="h-6 w-6 text-white"/>
         </button>

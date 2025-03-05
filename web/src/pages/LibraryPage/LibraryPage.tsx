@@ -1,19 +1,25 @@
 import { useQuery } from '@redwoodjs/web';
 import { GET_ANKI_CARDS, GET_ANKI_TAGS } from '../HomePage/HomPage.query';
-import { Link, useLocation} from '@redwoodjs/router'
+import { Link, navigate} from '@redwoodjs/router'
 import { AcademicCapIcon } from '@heroicons/react/24/solid'
-
+import LoadingAnimation from 'src/components/LoadingAnimation';
+import { useGlobal } from 'src/context/GlobalContext';
+import { useEffect } from 'react';
 
 const LibraryPage = () => {
+  const global = useGlobal();
+  useEffect(() => {
+    if (global.isAuth == false) {
+      navigate("/login")
+    }
+  }, [])
+
   // Lấy danh sách Tags
   const { data: tagsData, loading: tagsLoading, error: tagsError } = useQuery(GET_ANKI_TAGS);
 
   // Lấy danh sách tất cả các thẻ
   const { data: cardsData, loading: cardsLoading, error: cardsError } = useQuery(GET_ANKI_CARDS);
 
-  if (tagsLoading || cardsLoading) return <p>Đang tải dữ liệu...</p>;
-  if (tagsError) return <p>Lỗi khi tải tags: {tagsError.message}</p>;
-  if (cardsError) return <p>Lỗi khi tải thẻ: {cardsError.message}</p>;
 
   const tags = tagsData?.ankiTags || [];
   const cards = cardsData?.ankiCards || [];
@@ -42,9 +48,14 @@ const LibraryPage = () => {
   const repeatedColors = Array.from({ length: tags.length }, (_, i) => baseColors[i % baseColors.length]);
 
   return (
-    <main className="p-4 mx-auto w-[85%] md:w-[75%] lg:w-[50%]">
+    <main className="p-4 mx-auto w-full sm:w-[85%] md:w-[75%] lg:w-[50%]">
+
+      <LoadingAnimation state={tagsLoading && cardsLoading} texts={['Đang tải dữ liệu...', '']} />
+      {tagsError ? (<p>Lỗi khi tải tags: {tagsError.message}</p>) : ""}
+      {cardsError ? (<p>Lỗi khi tải thẻ: {cardsError.message}</p>) : ""}
+
       <section>
-        <h2 className="my-4 text-white font-semibold text-2xl">Bộ thẻ</h2>
+        <h2 className="my-4 text-white font-semibold text-2xl">Bộ thẻ ({cards.length})</h2>
         <div className="grid grid-cols-2 gap-4">
           {tags.map((tag, idx) => {
             const colorClass = repeatedColors[idx]; // Lặp lại màu nếu cần
@@ -53,7 +64,7 @@ const LibraryPage = () => {
             return (
               <Link
                 key={tag.id}
-                className={`px-4 py-12 rounded-lg text-white font-bold text-center shadow-md ${colorClass}`}
+                className={`px-4 py-14 rounded-lg text-sm sm:text-lg text-white font-bold text-center shadow-md ${colorClass}`}
                 to={`/home?tag=${tag.id}`}
               >
                 {tag.name} ({cardCount})
@@ -63,8 +74,9 @@ const LibraryPage = () => {
         </div>
       </section>
 
-      <div className='fixed right-2 bottom-2 flex gap-2 flex-col-reverse transition-transform'>
 
+
+      <div className='fixed right-2 bottom-2 flex gap-2 flex-col-reverse transition-transform'>
         {/* Nút thư viện */}
         <Link
           to='/home'
