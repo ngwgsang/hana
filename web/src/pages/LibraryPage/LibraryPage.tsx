@@ -4,15 +4,26 @@ import { Link, navigate} from '@redwoodjs/router'
 import { AcademicCapIcon } from '@heroicons/react/24/solid'
 import LoadingAnimation from 'src/components/LoadingAnimation';
 import { useGlobal } from 'src/context/GlobalContext';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+
 
 const LibraryPage = () => {
+  const [apiResponse, setApiResponse] = useState({
+    "think": "Chưa suy nghĩ",
+    "knowledge": "99",
+    "pass_n1_rate": "99",
+    "performance": "99"
+  });
+  const [isLoading, setIsLoading] = useState(false) // Trạng thái upload
+  const [isCalcPerformance, setIsCalcPerformance] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(false);
+
   const global = useGlobal();
-  useEffect(() => {
-    if (global.isAuth == false) {
-      navigate("/login")
-    }
-  }, [])
+  // useEffect(() => {
+  //   if (global.isAuth == false) {
+  //     navigate("/login")
+  //   }
+  // }, [])
 
   // Lấy danh sách Tags
   const { data: tagsData, loading: tagsLoading, error: tagsError } = useQuery(GET_ANKI_TAGS);
@@ -74,9 +85,73 @@ const LibraryPage = () => {
         </div>
       </section>
 
+      <section className='mt-4'>
+        <h2 className="my-4 text-white font-semibold text-2xl ">Đánh giá</h2>
+        <button
+          type="button"
+          onClick={async () => {
+            setIsCalcPerformance(true)
+            setIsLoading(true)
+            try {
+              const response = await fetch('http://127.0.0.1:5000/greet', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  inputs: {
+                    cards: cardsData.ankiCards,
+                    tags: tags,
+                    tagCount: tagCardCount
+                  },
+                }) // Dữ liệu gửi đến API
+              });
 
+              const result = await response.json();
+              setApiResponse(result); // Cập nhật state với phản hồi từ backend
+            } catch (error) {
+              alert(error)
+              console.error("Error calling API:", error);
+            }
+            // setIsCalcPerformance(false)
+            setIsLoading(false)
+          }}
+          className="text-white px-4 py-2 rounded-md border-2 border-blue-700 "
+        >
+          Đánh giá năng lực 🤖
+        </button>
+            {
+              isCalcPerformance ? (
+                <LoadingAnimation state={isLoading}  texts={["Đang tính toán...", (
+                  <>
+                    <div className='mt-4 mb-2 grid grid-cols-3 gap-2 w-full'>
+                        <div className="relative flex items-center justify-center px-4 py-12 rounded-md bg-violet-600 border-4 border-violet-800 text-white text-2xl font-semibold">
+                          <span className='rounded-lg border-2 borbder-violet-800 bg-violet-600 absolute top-1 left-1 text-sm px-2 py-1'>Tỉ lệ Pass</span>
+                          {apiResponse.pass_n1_rate}%
+                        </div>
+                        <div className="relative flex items-center justify-center px-4 py-12 rounded-md bg-sky-600 border-4 border-sky-800 text-white text-2xl font-semibold">
+                          <span className='rounded-lg border-2 borbder-violet-800 bg-sky-600 absolute top-1 left-1 text-sm px-2 py-1'>Kiến thức</span>
+                          {apiResponse.performance}%
+                        </div>
+                        <div className="relative flex items-center justify-center  px-4 py-12 rounded-md bg-orange-600 border-4 border-orange-800 text-white text-2xl font-semibold">
+                          <span className='rounded-lg border-2 borbder-violet-800 bg-organge-600 absolute top-1 left-1 text-sm px-2 py-1'>Hiệu suất học</span>
+                          {apiResponse.knowledge}%
+                        </div>
+                    </div>
 
-      <div className='fixed right-2 bottom-2 flex gap-2 flex-col-reverse transition-transform'>
+                    <div
+                    className='bg-gray-600 border-gray-800 text-sm p-2 text-white border-4 rounded-md cursor-pointer'
+                    onClick={() => setIsExpanded(!isExpanded)} // Toggle mở rộng/thu nhỏ
+                    >
+                    <span className="font-bold">Nhận xét:</span> {isExpanded ? apiResponse.think : " (Bấm để xem chi tiết)"}
+                    </div>
+                  </>
+                )]}/>
+              ) : ""
+            }
+      </section>
+
+      <div className='fixed right-2 bottom-4 sm:bottom-2 flex gap-2 flex-col-reverse transition-transform'>
         {/* Nút thư viện */}
         <Link
           to='/home'

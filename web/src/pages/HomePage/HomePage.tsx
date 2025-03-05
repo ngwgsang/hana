@@ -64,8 +64,7 @@ const HomePage = () => {
       if (!data?.ankiCards) return;
 
       const currentDate = new Date();
-      const alpha = 0.33; // Trọng số ảnh hưởng của enrollAt
-
+      const alpha = 0.7;
       const sortedCards = data.ankiCards.map((card) => {
         const enrollDate = card.enrollAt ? new Date(card.enrollAt) : new Date();
         const daysSinceEnroll = isNaN(enrollDate) ? 0 : (currentDate - enrollDate) / (1000 * 60 * 60 * 24);
@@ -300,40 +299,37 @@ const HomePage = () => {
   }
 
   const handlePointUpdate = async (cardId, pointChange) => {
-    // Ẩn thẻ ngay lập tức
     setHiddenCards((prevHidden) => [...prevHidden, cardId]);
+    setCards((prevCards) =>
+      prevCards.map((card) => {
+        if (card.id !== cardId) return card;
 
-    if (pointChange === 1) {
-      setCards((prevCards) =>
-        prevCards.map((card) =>
-          card.id === cardId ? { ...card, point: 2 } : card
-        )
-      );
-    } else if (pointChange === -1) {
-      setCards((prevCards) =>
-        prevCards.map((card) =>
-          card.id === cardId ? { ...card, point: card.point + pointChange } : card
-        )
-      );
-    } else {
-      setCards((prevCards) =>
-        prevCards.map((card) =>
-          card.id === cardId ? { ...card, point: 0 } : card
-        )
-      );
-    }
+        let newPoint = card.point;
+
+        if (pointChange === 1) {
+          // Khi nhớ, tăng điểm nhưng có giới hạn max
+          newPoint = Math.min(10, card.point * 1.5);
+        } else if (pointChange === -1) {
+          // Khi quên, giảm theo tỷ lệ nhưng không về 0 ngay
+          newPoint = Math.max(0, card.point * 0.7);
+        } else {
+          // Khi không chắc, giảm nhẹ hoặc giữ nguyên
+          newPoint = Math.max(0, card.point - 1);
+        }
+
+        return { ...card, point: Math.round(newPoint) };
+      })
+    );
 
     try {
       await updateAnkiCardPoint({
         variables: { id: cardId, pointChange },
       });
     } catch (error) {
-      console.error('Lỗi cập nhật điểm:', error);
-      // Nếu có lỗi, hiển thị lại thẻ
+      console.error("Lỗi cập nhật điểm:", error);
       setHiddenCards((prevHidden) => prevHidden.filter((id) => id !== cardId));
     }
   };
-
 
   const HandleSpecialText = (text) => {
     if (!text) return "";
@@ -573,7 +569,7 @@ const HomePage = () => {
 
       </Popup>
 
-      <div className='fixed right-2 bottom-2 flex gap-2 flex-col-reverse transition-transform'>
+      <div className='fixed right-2 bottom-4 sm:bottom-2 flex gap-2 flex-col-reverse transition-transform'>
         {/* Nút thêm thẻ */}
         <button onClick={handleAdd} className=" bg-blue-600 text-white rounded hover:bg-blue-700 p-2">
           <PlusIcon className="h-6 w-6 text-white"></PlusIcon>

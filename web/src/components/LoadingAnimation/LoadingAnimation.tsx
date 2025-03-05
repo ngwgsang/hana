@@ -11,7 +11,7 @@ const LoadingAnimation = ({ className, state, texts }: iLoadingAnimation) => {
   return (
     <>
         {state ? (
-          <div className="flex items-center gap-2 text-white">
+          <div className="flex items-center gap-2 text-white my-2">
             <span className='animate-bounce text-white'>🐳</span>
             <span className='animate-pulse'>{texts[0]}</span>
           </div>
