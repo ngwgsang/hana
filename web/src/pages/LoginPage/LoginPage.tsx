@@ -77,7 +77,7 @@ const SimpleLoginPage = () => {
             {code.map((num, index) => (
               <input
                 key={index}
-                type="text"
+                type="number"
                 maxLength="1"
                 value={num}
                 ref={(el) => (inputRefs.current[index] = el)}
