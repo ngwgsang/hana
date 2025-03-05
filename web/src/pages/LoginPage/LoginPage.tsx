@@ -60,9 +60,9 @@ const SimpleLoginPage = () => {
   }, [global.isAuth])
 
   return (
-    <div className="flex justify-center items-center h-screen bg-gray-100">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-80">
-        <h2 className="text-2xl font-bold text-center mb-4">Đăng nhập</h2>
+    <div className="flex justify-center items-center h-screen">
+      <div className="bg-slate-800 p-6 rounded-lg shadow-lg w-80">
+        <h2 className="text-2xl font-bold text-center mb-4 text-white">Đăng nhập</h2>
 
         <form
           className="max-w-sm mx-auto"
@@ -93,7 +93,7 @@ const SimpleLoginPage = () => {
           <button
             type="button"
             onClick={handleSubmit}
-            className="w-full mt-4 px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-400"
+            className="w-full mt-4 px-3 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-600"
           >
             Xác nhận
           </button>
