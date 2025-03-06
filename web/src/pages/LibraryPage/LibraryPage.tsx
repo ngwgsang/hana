@@ -1,47 +1,180 @@
 import { useQuery } from '@redwoodjs/web';
 import { GET_ANKI_CARDS, GET_ANKI_TAGS } from '../HomePage/HomPage.query';
-import { Link, navigate} from '@redwoodjs/router'
-import { AcademicCapIcon } from '@heroicons/react/24/solid'
+import { Link } from '@redwoodjs/router'
+import { useState } from 'react';
+import { Together } from "together-ai"; // Import Together AI
 import LoadingAnimation from 'src/components/LoadingAnimation';
 import { useGlobal } from 'src/context/GlobalContext';
-import { useEffect, useState } from 'react';
+import { AcademicCapIcon } from '@heroicons/react/24/solid'
 
 
 const LibraryPage = () => {
   const [apiResponse, setApiResponse] = useState({
-    "think": "Chưa suy nghĩ",
-    "knowledge": "99",
-    "pass_n1_rate": "99",
-    "performance": "99"
+    think: "Chưa suy nghĩ",
+    knowledge: "99",
+    pass_n1_rate: "99",
+    performance: "99"
   });
-  const [isLoading, setIsLoading] = useState(false) // Trạng thái upload
-  const [isCalcPerformance, setIsCalcPerformance] = useState(false)
+
+  const [activeTab, setActiveTab] = useState('performance'); // Mặc định hiển thị tab A
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [isCalcPerformance, setIsCalcPerformance] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
   const global = useGlobal();
-  // useEffect(() => {
-  //   if (global.isAuth == false) {
-  //     navigate("/login")
-  //   }
-  // }, [])
+  const [question, setQuestion] = useState(null);
+  const [selectedAnswer, setSelectedAnswer] = useState(null);
+  const [explanation, setExplanation] = useState(null);
+  const [isGeneratingQuestion, setIsGeneratingQuestion] = useState(false);
 
-  // Lấy danh sách Tags
   const { data: tagsData, loading: tagsLoading, error: tagsError } = useQuery(GET_ANKI_TAGS);
-
-  // Lấy danh sách tất cả các thẻ
   const { data: cardsData, loading: cardsLoading, error: cardsError } = useQuery(GET_ANKI_CARDS);
-
 
   const tags = tagsData?.ankiTags || [];
   const cards = cardsData?.ankiCards || [];
 
-  // Tạo bản đồ (map) đếm số lượng thẻ theo tag
   const tagCardCount = {};
   tags.forEach(tag => {
     tagCardCount[tag.id] = cards.filter(card => card.tags.some(t => t.id === tag.id)).length;
   });
 
-  // Danh sách màu đơn sắc từ TailwindCSS (lặp lại nếu tag nhiều hơn)
+  const together = new Together({ apiKey: process.env.REDWOOD_ENV_TOGETHER_AI });
+
+  const calculatePerformance = async () => {
+
+    setActiveTab('performance')
+    setIsCalcPerformance(true);
+    setIsLoading(true);
+
+    try {
+      const vocab = cards.map(card => card.front);
+      const tagsFormatted = tags.map(tag => ({
+        tag: tag.name,
+        count: tagCardCount[tag.id] || 0
+      }));
+
+      const messageContent = `
+        Dưới đây là dữ liệu về quá trình học của tôi với các bộ thẻ Anki.
+        Tôi thi N2 được 100/180 điểm và đang ôn luyện N1.
+        TARGET-LEVEL: Để đỗ N1 cần 10,000 từ vựng, 2,000 chữ Hán và 1,000 cấu trúc ngữ pháp.
+
+        Cards: ${vocab.join(', ')}
+        Tags: ${JSON.stringify(tagsFormatted)}
+
+        TASK: Hãy đánh giá năng lực học tập của tôi và trả kết quả theo format:
+        <knowledge>{int}</knowledge>
+        <performance>{int}</performance>
+        <pass_n1_rate>{int}</pass_n1_rate>
+        <think>{string}</think>
+      `;
+
+      const response = await together.chat.completions.create({
+        model: process.env.REDWOOD_ENV_REASONING_MODEL,
+        messages: [{ role: "user", content: messageContent }]
+      });
+
+      const textResponse = response.choices[0].message.content;
+
+      const extractData = (label, text) => {
+        const match = text.match(new RegExp(`<${label}>(.*?)</${label}>`, "s"));
+        return match ? match[1].trim() : "N/A";
+      };
+
+      setApiResponse({
+        knowledge: extractData("knowledge", textResponse),
+        performance: extractData("performance", textResponse),
+        pass_n1_rate: extractData("pass_n1_rate", textResponse),
+        think: extractData("think", textResponse),
+      });
+
+    } catch (error) {
+      console.error("Error calling Together AI:", error);
+      alert("Lỗi khi gọi API Together AI");
+    }
+
+    setIsLoading(false);
+  };
+
+
+  // Function to generate a random question
+  const generateRandomQuestion = async () => {
+
+    setActiveTab('quiz')
+
+    if (cards.length === 0) {
+      alert("Không có thẻ nào để tạo câu hỏi!");
+      return;
+    }
+
+    setIsGeneratingQuestion(true);
+    setSelectedAnswer(null);
+    setExplanation(null);
+
+    const randomCard = cards[Math.floor(Math.random() * cards.length)];
+
+    try {
+      const questionPrompt = `
+        Hãy tạo một câu hỏi trắc nghiệm dựa trên từ vựng sau:
+        Từ: "${randomCard.front}"
+        Nghĩa: "${randomCard.back}"
+        Các thể loại câu hỏi được tôi cho phép:
+        - Cách đọc Kanji
+        - Nghĩa của từ
+        - Lựa chọn từ đồng nghĩa, trái nghĩa
+
+        Hãy trả về câu hỏi theo format sau:
+        <question>{string}</question>
+        <optionA>{string}</optionA>
+        <optionB>{string}</optionB>
+        <optionC>{string}</optionC>
+        <optionD>{string}</optionD>
+        <correct>{char}</correct> (A, B, C, hoặc D)
+        <explanation>{string}</explanation> (Giải thích vì sao đáp án đúng)
+
+        # Lưu ý:
+        Câu hỏi , đáp án là tiếng Nhật
+        Giải thích là tiếng Việt
+        `;
+
+      const response = await together.chat.completions.create({
+        model: process.env.REDWOOD_ENV_REASONING_MODEL,
+        messages: [{ role: "user", content: questionPrompt }]
+      });
+
+      const textResponse = response.choices[0].message.content;
+
+      const extractData = (label) => {
+        const match = textResponse.match(new RegExp(`<${label}>(.*?)</${label}>`, "s"));
+        return match ? match[1].trim() : "N/A";
+      };
+
+      setQuestion({
+        text: extractData("question"),
+        options: {
+          A: extractData("optionA"),
+          B: extractData("optionB"),
+          C: extractData("optionC"),
+          D: extractData("optionD"),
+        },
+        correct: extractData("correct"),
+        explanation: extractData("explanation"),
+      });
+
+    } catch (error) {
+      console.error("Error generating question:", error);
+      alert("Lỗi khi tạo câu hỏi!");
+    }
+
+    setIsGeneratingQuestion(false);
+  };
+
+  const handleAnswerSelection = (option) => {
+    setSelectedAnswer(option);
+    setExplanation(question.explanation);
+  };
+
+
   const baseColors = [
     'bg-red-500 hover:bg-red-400',
     'bg-blue-500 hover:bg-blue-400',
@@ -55,100 +188,102 @@ const LibraryPage = () => {
     'bg-gray-500 hover:bg-gray-400'
   ];
 
-  // Tạo danh sách màu lặp lại khi cần
   const repeatedColors = Array.from({ length: tags.length }, (_, i) => baseColors[i % baseColors.length]);
 
   return (
     <main className="p-4 mx-auto w-full sm:w-[85%] md:w-[75%] lg:w-[50%]">
-
       <LoadingAnimation state={tagsLoading && cardsLoading} texts={['Đang tải dữ liệu...', '']} />
-      {tagsError ? (<p>Lỗi khi tải tags: {tagsError.message}</p>) : ""}
-      {cardsError ? (<p>Lỗi khi tải thẻ: {cardsError.message}</p>) : ""}
+      {tagsError && <p>Lỗi khi tải tags: {tagsError.message}</p>}
+      {cardsError && <p>Lỗi khi tải thẻ: {cardsError.message}</p>}
 
       <section>
         <h2 className="my-4 text-white font-semibold text-2xl">Bộ thẻ ({cards.length})</h2>
         <div className="grid grid-cols-2 gap-4">
-          {tags.map((tag, idx) => {
-            const colorClass = repeatedColors[idx]; // Lặp lại màu nếu cần
-            const cardCount = tagCardCount[tag.id] || 0; // Lấy số lượng thẻ theo tag
-
-            return (
-              <Link
-                key={tag.id}
-                className={`px-4 py-14 rounded-lg text-sm sm:text-lg text-white font-bold text-center shadow-md ${colorClass}`}
-                to={`/home?tag=${tag.id}`}
-              >
-                {tag.name} ({cardCount})
-              </Link>
-            );
-          })}
+          {
+            tags.map((tag, idx) => {
+              const colorClass = repeatedColors[idx]; // Lặp lại màu nếu cần
+              return (
+                <Link key={tag.id} className={`${colorClass} px-4 py-14 rounded-lg text-white font-bold text-center shadow-md`} to={`/home?tag=${tag.id}`}>
+                  {tag.name} ({tagCardCount[tag.id] || 0})
+                </Link>
+              )
+            })
+          }
         </div>
       </section>
 
       <section className='mt-4'>
-        <h2 className="my-4 text-white font-semibold text-2xl ">Đánh giá</h2>
-        <button
-          type="button"
-          onClick={async () => {
-            setIsCalcPerformance(true)
-            setIsLoading(true)
-            try {
-              const response = await fetch('http://127.0.0.1:5000/greet', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  inputs: {
-                    cards: cardsData.ankiCards,
-                    tags: tags,
-                    tagCount: tagCardCount
-                  },
-                }) // Dữ liệu gửi đến API
-              });
+        <h2 className="my-4 text-white font-semibold text-2xl ">Tính năng 💫</h2>
 
-              const result = await response.json();
-              setApiResponse(result); // Cập nhật state với phản hồi từ backend
-            } catch (error) {
-              alert(error)
-              console.error("Error calling API:", error);
-            }
-            // setIsCalcPerformance(false)
-            setIsLoading(false)
-          }}
-          className="text-white px-4 py-2 rounded-md border-2 border-blue-700 "
-        >
-          Đánh giá năng lực 🤖
-        </button>
-            {
-              isCalcPerformance ? (
-                <LoadingAnimation state={isLoading}  texts={["Đang tính toán...", (
-                  <>
-                    <div className='mt-4 mb-2 grid grid-cols-3 gap-2 w-full'>
-                        <div className="relative flex items-center justify-center px-4 py-12 rounded-md bg-violet-600 border-4 border-violet-800 text-white text-2xl font-semibold">
-                          <span className='rounded-lg border-2 borbder-violet-800 bg-violet-600 absolute top-1 left-1 text-sm px-2 py-1'>Tỉ lệ Pass</span>
-                          {apiResponse.pass_n1_rate}%
-                        </div>
-                        <div className="relative flex items-center justify-center px-4 py-12 rounded-md bg-sky-600 border-4 border-sky-800 text-white text-2xl font-semibold">
-                          <span className='rounded-lg border-2 borbder-violet-800 bg-sky-600 absolute top-1 left-1 text-sm px-2 py-1'>Kiến thức</span>
-                          {apiResponse.performance}%
-                        </div>
-                        <div className="relative flex items-center justify-center  px-4 py-12 rounded-md bg-orange-600 border-4 border-orange-800 text-white text-2xl font-semibold">
-                          <span className='rounded-lg border-2 borbder-violet-800 bg-organge-600 absolute top-1 left-1 text-sm px-2 py-1'>Hiệu suất học</span>
-                          {apiResponse.knowledge}%
-                        </div>
-                    </div>
+        <div className='grid grid-cols-2 gap-1'>
+          <button
+            type="button"
+            onClick={calculatePerformance}
+            className="text-white px-4 py-2 rounded-md border-2 border-blue-700"
+          >
+            {isCalcPerformance ? "Đánh giá lại 🤖" : "Đánh giá năng lực 🤖"}
+          </button>
+          <button
+            type="button"
+            onClick={generateRandomQuestion}
+            className="text-white px-4 py-2 rounded-md border-2 border-blue-700 "
+          >
+            {isGeneratingQuestion && activeTab == "quiz" ? "Đang tạo câu hỏi..." : "Tạo câu hỏi ngẫu nhiên 🎲"}
+          </button>
+        </div>
 
-                    <div
-                    className='bg-gray-600 border-gray-800 text-sm p-2 text-white border-4 rounded-md cursor-pointer'
-                    onClick={() => setIsExpanded(!isExpanded)} // Toggle mở rộng/thu nhỏ
-                    >
-                    <span className="font-bold">Nhận xét:</span> {isExpanded ? apiResponse.think : " (Bấm để xem chi tiết)"}
-                    </div>
-                  </>
-                )]}/>
-              ) : ""
-            }
+
+        {isCalcPerformance && activeTab == "performance" && (
+          <LoadingAnimation state={isLoading} texts={[
+            "Đang tính toán...",
+            <>
+              <div className='mt-4 mb-2 grid grid-cols-3 gap-2 w-full'>
+                <div className="relative flex items-center justify-center px-4 py-12 rounded-md bg-violet-600 border-4 text-white text-2xl font-semibold">
+                  <span className='absolute top-1 left-1 text-sm px-2 py-1'>Tỉ lệ Pass</span>
+                  {apiResponse.pass_n1_rate}%
+                </div>
+                <div className="relative flex items-center justify-center px-4 py-12 rounded-md bg-sky-600 border-4 text-white text-2xl font-semibold">
+                  <span className='absolute top-1 left-1 text-sm px-2 py-1'>Kiến thức</span>
+                  {apiResponse.knowledge}%
+                </div>
+                <div className="relative flex items-center justify-center px-4 py-12 rounded-md bg-orange-600 border-4 text-white text-2xl font-semibold">
+                  <span className='absolute top-1 left-1 text-sm px-2 py-1'>Hiệu suất học</span>
+                  {apiResponse.performance}%
+                </div>
+              </div>
+              <div className='bg-gray-600 border-gray-800 text-sm p-2 text-white border-4 rounded-md cursor-pointer' onClick={() => setIsExpanded(!isExpanded)}>
+                <span className="font-bold">Nhận xét:</span> {isExpanded ? apiResponse.think : " (Bấm để xem chi tiết)"}
+              </div>
+            </>
+          ]} />
+        )}
+
+        {question && activeTab == "quiz" && (
+          <div className="mt-4 p-4 bg-gray-600 border-gray-800 border-4 text-white rounded-md">
+            <h3 className="text-lg font-bold">{question.text}</h3>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {Object.entries(question.options).map(([key, value]) => (
+                <button
+                  key={key}
+                  className={`px-4 py-8 rounded-md text-white font-medium ${selectedAnswer === key ? (key === question.correct ? 'bg-green-600' : 'bg-red-600') : 'bg-blue-500 hover:bg-blue-400'}`}
+                  onClick={() => handleAnswerSelection(key)}
+                  disabled={selectedAnswer !== null}
+                >
+                  {key}. {value}
+                </button>
+              ))}
+            </div>
+
+            {selectedAnswer && (
+              <p className="mt-4 text-yellow-300">
+                <strong>{selectedAnswer === question.correct ? "✅ Đúng rồi!" : "❌ Sai rồi!"}</strong>
+                <br />
+                <span className="text-sm">{explanation}</span>
+              </p>
+            )}
+          </div>
+        )}
+
       </section>
 
       <div className='fixed right-2 bottom-4 sm:bottom-2 flex gap-2 flex-col-reverse transition-transform'>
