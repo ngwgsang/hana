@@ -69,3 +69,13 @@ model AnkiTag {
   name    String    @unique                       // Tên tag (ví dụ: "N2", "Ngữ pháp")
   cards   AnkiCard[]                              // Quan hệ nhiều-nhiều với AnkiCard (không cần references)
 }
+
+model StudyProgress {
+  id         String   @id @default(cuid())
+  date       DateTime @unique // Ngày thống kê
+  goodCount  Int      @default(0) // Số lần chọn "good"
+  normalCount Int     @default(0) // Số lần chọn "normal"
+  badCount   Int      @default(0) // Số lần chọn "bad"
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}

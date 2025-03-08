@@ -44,6 +44,19 @@ const HomePage = () => {
   const tagFromURL = searchParams.get('tag'); // Lấy giá trị tag từ URL
 
 
+  const UPDATE_STUDY_PROGRESS = gql`
+  mutation UpdateStudyProgress($status: String!) {
+    updateStudyProgress(status: $status) {
+      goodCount
+      normalCount
+      badCount
+    }
+  }
+`
+
+const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
+
+
   const global = useGlobal();
   useEffect(() => {
     if (global.isAuth == false) {
@@ -300,6 +313,12 @@ const HomePage = () => {
 
   const handlePointUpdate = async (cardId, pointChange) => {
     setHiddenCards((prevHidden) => [...prevHidden, cardId]);
+    let status = ''
+    if (pointChange === 1) status = 'good'
+    if (pointChange === 0) status = 'normal'
+    if (pointChange === -1) status = 'bad'
+
+
     setCards((prevCards) =>
       prevCards.map((card) => {
         if (card.id !== cardId) return card;
@@ -322,6 +341,9 @@ const HomePage = () => {
     );
 
     try {
+      await updateStudyProgress({
+        variables: { status }
+      })
       await updateAnkiCardPoint({
         variables: { id: cardId, pointChange },
       });
@@ -411,19 +433,19 @@ const HomePage = () => {
             {/* Điểm số */}
             {
                     card.point < -2 &&
-                      <span className="text-sm text-red-600 border border-red-500  mt-2 py-1 px-2 rounded-md w-auto font-semibold">
+                      <span className="text-sm text-red-500 border bg-red-500/10 border-red-500  mt-2 py-1 px-2 rounded-md w-auto font-semibold">
                         <span>Cần ôn</span>
                       </span>
             }
             {
                     card.point == -2 &&
-                      <span className="text-sm text-orange-600 border border-orange-500 mt-2 py-1 px-2 rounded-md w-auto font-semibold">
+                      <span className="text-sm text-orange-500 bg-orange-500/10 border border-orange-500 mt-2 py-1 px-2 rounded-md w-auto font-semibold">
                         <span>Sắp đến hạn</span>
                       </span>
             }
             {
                     card.point > -2 &&
-                      <span className="text-sm text-green-600 border border-green-500 mt-2 py-1 px-2 rounded-md w-auto font-semibold">
+                      <span className="text-sm text-green-500 bg-green-500/10 border border-green-500 mt-2 py-1 px-2 rounded-md w-auto font-semibold">
                         <span>Chưa đến hạn</span>
                       </span>
             }
@@ -483,7 +505,7 @@ const HomePage = () => {
                 disabled={isUploading} // Vô hiệu hóa khi đang tải
                 className={`px-4 py-2 rounded text-white bg-blue-600 hover:bg-blue-700`}
               >
-                <LoadingAnimation state={isUploading} texts={['Đang cập nhập...2', 'Xác nhận thêm thẻ2']}/>
+                <LoadingAnimation state={isUploading} texts={['Đang cập nhập...', 'Xác nhận thêm thẻ']}/>
               </button>
             </div>
           ) : editingCard && (

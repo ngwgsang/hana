@@ -105,3 +105,51 @@ export const updateAnkiCardPoint: MutationResolvers['updateAnkiCardPoint'] = asy
     },
   })
 }
+
+
+export const ankiCardsByDate = async ({ date }) => {
+  const parsedDate = new Date(date)
+  parsedDate.setHours(0, 0, 0, 0)
+
+  const nextDay = new Date(parsedDate)
+  nextDay.setDate(nextDay.getDate() + 1)
+
+  const cards = await db.ankiCard.findMany({
+    where: {
+      createdAt: {
+        gte: parsedDate,
+        lt: nextDay,
+      },
+    },
+    select: { front: true }, // Chỉ lấy giá trị front
+  })
+
+  return {
+    count: cards.length,
+    cards,
+  }
+}
+
+
+export const ankiCardsByRange = async ({ startDate, endDate }) => {
+  const start = new Date(startDate)
+  start.setHours(0, 0, 0, 0)
+
+  const end = new Date(endDate)
+  end.setHours(23, 59, 59, 999)
+
+  const cards = await db.ankiCard.findMany({
+    where: {
+      createdAt: {
+        gte: start,
+        lte: end,
+      },
+    },
+    select: { front: true }, // Chỉ lấy giá trị front
+  })
+
+  return {
+    count: cards.length,
+    cards,
+  }
+}

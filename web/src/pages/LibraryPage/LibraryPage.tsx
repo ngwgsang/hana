@@ -1,14 +1,17 @@
 import { useQuery } from '@redwoodjs/web';
 import { GET_ANKI_CARDS, GET_ANKI_TAGS } from '../HomePage/HomPage.query';
-import { Link } from '@redwoodjs/router'
-import { useState } from 'react';
+import { Link, navigate } from '@redwoodjs/router'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Together } from "together-ai"; // Import Together AI
 import LoadingAnimation from 'src/components/LoadingAnimation';
 import { useGlobal } from 'src/context/GlobalContext';
-import { AcademicCapIcon } from '@heroicons/react/24/solid'
+import { AcademicCapIcon, FireIcon } from '@heroicons/react/24/solid'
 
 
 const LibraryPage = () => {
+
+
+
   const [apiResponse, setApiResponse] = useState({
     think: "Chưa suy nghĩ",
     knowledge: "99",
@@ -38,6 +41,12 @@ const LibraryPage = () => {
   tags.forEach(tag => {
     tagCardCount[tag.id] = cards.filter(card => card.tags.some(t => t.id === tag.id)).length;
   });
+
+  useEffect(() => {
+    if (global.isAuth == false) {
+      navigate("/login")
+    }
+  }, [])
 
   const together = new Together({ apiKey: process.env.REDWOOD_ENV_TOGETHER_AI });
 
@@ -293,6 +302,12 @@ const LibraryPage = () => {
           className="text-white rounded bg-blue-600 hover:bg-blue-700 p-2"
         >
           <AcademicCapIcon className="h-6 w-6 text-white"/>
+        </Link>
+        <Link
+          to='/report'
+          className="text-white rounded bg-blue-600 hover:bg-blue-700 p-2"
+        >
+          <FireIcon className="h-6 w-6 text-white"/>
         </Link>
       </div>
     </main>

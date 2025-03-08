@@ -107,6 +107,51 @@ const DELETE_ANKI_TAG = gql`
   }
 `
 
+const GET_DAILY_REPORT = gql`
+  query GetDailyReport($date: DateTime!) {
+    studyProgressByDate(date: $date) {
+      goodCount
+      normalCount
+      badCount
+    }
+    ankiCardsByDate(date: $date) {
+      count
+      cards {
+        front
+      }
+    }
+  }
+`
+
+const GET_WEEKLY_REPORT = gql`
+  query GetWeeklyReport($startDate: DateTime!, $endDate: DateTime!) {
+    studyProgressByRange(startDate: $startDate, endDate: $endDate) {
+      goodCount
+      normalCount
+      badCount
+    }
+    ankiCardsByRange(startDate: $startDate, endDate: $endDate) {
+      count
+      cards {
+        front
+      }
+    }
+  }
+`
+
+const GET_WEEKLY_PROGRESS = gql`
+  query GetWeeklyProgress($startDate: DateTime!, $endDate: DateTime!) {
+    studyProgressByWeek(startDate: $startDate, endDate: $endDate) {
+      date
+      goodCount
+      normalCount
+      badCount
+    }
+  }
+`
+
+
+
 export {
   BULK_CREATE_ANKI_CARDS,
   GET_ANKI_CARDS,
@@ -116,5 +161,8 @@ export {
   UPDATE_ANKI_CARD,
   UPDATE_ANKI_CARD_POINT,
   DELETE_ANKI_CARD,
-  DELETE_ANKI_TAG
+  DELETE_ANKI_TAG,
+  GET_DAILY_REPORT,
+  GET_WEEKLY_REPORT,
+  GET_WEEKLY_PROGRESS
 }
