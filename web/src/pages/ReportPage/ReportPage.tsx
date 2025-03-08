@@ -63,7 +63,7 @@ const ReportPage = () => {
           <p>Đang tải...</p>
         ) : (
           <div className='flex flex-col gap-2'>
-          <div className='grid grid-cols-3 gap-2'>
+          <div className='grid grid-cols-1 sm:grid-cols-3 gap-2'>
             <div className='relative border-4 rounded-md border-green-400 bg-green-400/10 h-32 flex items-center justify-center'>
               <span className='absolute top-1 left-1 text-sm px-2 py-1 text-green-400'>🤗 Nhớ rõ</span>
               <span className='font-semibold text-2xl'>{dailyData?.studyProgressByDate?.goodCount ?? 0} {' '}</span>
@@ -105,7 +105,7 @@ const ReportPage = () => {
           <p>Đang tải...</p>
         ) : (
           <>
-        <div className='grid grid-cols-3 gap-2'>
+        <div className='grid grid-cols-1 sm:grid-cols-3 gap-2'>
           <div className='relative border-4 rounded-md border-green-400 bg-green-400/10 h-32 flex items-center justify-center'>
             <span className='absolute top-1 left-1 text-sm px-2 py-1 text-green-400'>🤗 Nhớ rõ</span>
             <span className='font-semibold text-2xl'>{weeklyData?.studyProgressByRange?.goodCount ?? 0} {' '}</span>

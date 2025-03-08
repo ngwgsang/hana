@@ -21,7 +21,7 @@ const Routes = () => {
       <Route path="/agents" page={AgentsPage} name="agents" /> */}
       <Route path="/home" page={Home} name="home" />
       <Route path="/library" page={LibraryPage} name="library" />
-      <Route path="/report" page={ReportPage} name="library" />
+      <Route path="/report" page={ReportPage} name="report" />
       <Route notfound page={NotFoundPage} />
     </Router>
   )
