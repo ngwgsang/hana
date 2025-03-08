@@ -409,10 +409,24 @@ const HomePage = () => {
             </div>
 
             {/* Điểm số */}
-            <span className="text-sm text-white border border-slate-400 bg-slate-600 mt-2 p-1 rounded-md w-auto">
-              <span>{ card.point <= 0 ? "😱" : "😊"  }</span>
-              {/* <span>{card.reviewScore !== undefined ? card.reviewScore.toFixed(1) : 'N/A'}</span> */}
-            </span>
+            {
+                    card.point < -2 &&
+                      <span className="text-sm text-red-600 border border-red-500  mt-2 py-1 px-2 rounded-md w-auto font-semibold">
+                        <span>Cần ôn</span>
+                      </span>
+            }
+            {
+                    card.point == -2 &&
+                      <span className="text-sm text-orange-600 border border-orange-500 mt-2 py-1 px-2 rounded-md w-auto font-semibold">
+                        <span>Sắp đến hạn</span>
+                      </span>
+            }
+            {
+                    card.point > -2 &&
+                      <span className="text-sm text-green-600 border border-green-500 mt-2 py-1 px-2 rounded-md w-auto font-semibold">
+                        <span>Chưa đến hạn</span>
+                      </span>
+            }
 
             {/* Nút cập nhật điểm */}
             <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 flex gap-2 bg-gray-800 p-2 rounded-lg shadow-lg transition-opacity duration-300">

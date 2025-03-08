@@ -15,7 +15,7 @@ const Popup = ({ title, isOpen, onClose, children }: PopupProps) => {
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-80 z-50">
-      <div className="bg-slate-800 p-6 rounded shadow-lg sm:w-[60vw] md:[40vw] 2xl:w-[30vw] relative">
+      <div className="bg-slate-800 p-6 rounded shadow-lg sm:w-[60vw] md:[50vw] 2xl:w-[30vw] relative">
         <h2 className="text-xl font-bold mb-4 text-white">{title}</h2>
         <button
           onClick={onClose}
