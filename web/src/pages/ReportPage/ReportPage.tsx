@@ -1,12 +1,25 @@
 import { useQuery } from '@redwoodjs/web'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { format, subDays, startOfWeek, endOfWeek, formatISO } from 'date-fns'
-import {GET_DAILY_REPORT, GET_WEEKLY_REPORT, GET_WEEKLY_PROGRESS  } from '../HomePage/HomPage.query'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import {GET_DAILY_REPORT, GET_WEEKLY_REPORT, GET_WEEKLY_PROGRESS, GET_SCATTER_DATA  } from '../HomePage/HomPage.query'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ScatterChart , Scatter } from 'recharts'
 import { Link, navigate } from '@redwoodjs/router'
 import { AcademicCapIcon, Squares2X2Icon } from '@heroicons/react/24/solid'
 import { useGlobal } from 'src/context/GlobalContext'
 import ExternalUrl from 'src/components/ExternalUrl/ExternalUrl'
+
+const CustomTooltip = ({ active, payload }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-gray-800 text-white p-2 rounded shadow-lg">
+        <p><strong>📌 Front:</strong> {payload[0].payload.front}</p>
+        <p><strong>📅 Ngày từ khi thêm:</strong> {Math.round(payload[0].payload.x)} ngày</p>
+        <p><strong>⭐ Điểm:</strong> {Math.round(payload[0].payload.y)}</p>
+      </div>
+    );
+  }
+  return null;
+};
 
 
 const ReportPage = () => {
@@ -32,12 +45,15 @@ const ReportPage = () => {
   const { data: weeklyData, loading: loadingWeekly } = useQuery(GET_WEEKLY_REPORT, {
     variables: { startDate: weekStart, endDate: weekEnd },
     onCompleted: (data) => {
-      console.log("✅ Weekly Data:", data)
+      // console.log("✅ Weekly Data:", data)
     },
   })
   const { data: weeklyProgressData, loading: loadingProgress } = useQuery(GET_WEEKLY_PROGRESS, {
     variables: { startDate: weekStart, endDate: weekEnd },
   })
+
+  const { data: scatterData, loading: loadingScatter } = useQuery(GET_SCATTER_DATA)
+
 
 
   const getDifference = (todayValue, yesterdayValue) => {
@@ -46,12 +62,43 @@ const ReportPage = () => {
     return diff > 0 ? `+${diff}` : diff
   }
 
+  const alpha = 0.7; // Hệ số trọng số
+
+  const scatterPlotData = scatterData?.ankiCards
+    .filter(card => card.enrollAt) // Bỏ qua thẻ không có enrollAt
+    .map((card) => {
+      const enrollDate = card.enrollAt ? new Date(card.enrollAt) : new Date();
+
+      if (isNaN(enrollDate.getTime())) {
+        console.warn("⚠ Lỗi: enrollAt không hợp lệ:", card.front, card.enrollAt);
+        return null;
+      }
+
+      // Tính số ngày từ lúc thẻ được thêm vào
+      const daysSinceEnroll = (new Date() - enrollDate) / (1000 * 60 * 60 * 24);
+
+      // Kiểm tra point hợp lệ
+      const point = card.point !== null && !isNaN(card.point) ? parseInt(card.point, 10) : 0;
+
+      // Tính reviewScore (giống HomePage.tsx)
+      const reviewScore = point + alpha * daysSinceEnroll;
+
+      return {
+        x: daysSinceEnroll,  // Trục X là số ngày từ khi thêm
+        y: reviewScore, // Trục Y sử dụng reviewScore
+        front: card.front,  // Nội dung thẻ
+      };
+    })
+    .filter(point => point !== null) // Bỏ các điểm bị null
+    .sort((a, b) => a.y - b.y); // Sắp xếp theo reviewScore
+
   const chartData = weeklyProgressData?.studyProgressByWeek.map((day) => ({
     date: format(new Date(day.date), 'EEE'), // Hiển thị thứ trong tuần
     good: day.goodCount,
     normal: day.normalCount,
     bad: day.badCount,
   })) || []
+
 
   return (
     <main className="p-4 mx-auto w-full sm:w-3/4 lg:w-1/2 flex flex-col relative">
@@ -135,6 +182,27 @@ const ReportPage = () => {
         </LineChart>
       </ResponsiveContainer>
     </div>
+
+
+    <div className="bg-gray-800 text-white p-4 rounded mt-4">
+      {loadingScatter ? (
+        <p>Đang tải...</p>
+      ) : (
+        <div className="w-full h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <ScatterChart>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis type="number" dataKey="x" name="Số ngày từ khi thêm thẻ" unit=" ngày" />
+              <YAxis type="number" dataKey="y" name="Review Score" unit=" điểm" />
+              <Tooltip content={<CustomTooltip />} />
+              <Scatter name="Thẻ" data={scatterPlotData} fill="#38bdf8" />
+            </ScatterChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+    </div>
+
+
       </div>
 
       <div className='fixed right-2 bottom-4 sm:bottom-2 flex gap-2 flex-col-reverse transition-transform'>

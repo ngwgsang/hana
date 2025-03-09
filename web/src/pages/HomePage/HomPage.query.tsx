@@ -150,6 +150,15 @@ const GET_WEEKLY_PROGRESS = gql`
   }
 `
 
+const GET_SCATTER_DATA = gql`
+  query GetScatterData {
+    ankiCards {
+      front
+      enrollAt
+      point
+    }
+  }
+`
 
 
 export {
@@ -164,5 +173,6 @@ export {
   DELETE_ANKI_TAG,
   GET_DAILY_REPORT,
   GET_WEEKLY_REPORT,
-  GET_WEEKLY_PROGRESS
+  GET_WEEKLY_PROGRESS,
+  GET_SCATTER_DATA
 }
