@@ -12,15 +12,12 @@ const CustomTooltip = ({ active, payload }) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-gray-800 text-white p-2 rounded shadow-lg">
-        <p><strong>📌 Front:</strong> {payload[0].payload.front}</p>
-        <p><strong>📅 Ngày từ khi thêm:</strong> {Math.round(payload[0].payload.x)} ngày</p>
-        <p><strong>⭐ Điểm:</strong> {Math.round(payload[0].payload.y)}</p>
+        <ExternalUrl href={`https://mazii.net/vi-VN/search/word/javi/${payload[0].payload.front}`} >{payload[0].payload.front}</ExternalUrl>
       </div>
     );
   }
   return null;
 };
-
 
 const ReportPage = () => {
 
@@ -53,7 +50,6 @@ const ReportPage = () => {
   })
 
   const { data: scatterData, loading: loadingScatter } = useQuery(GET_SCATTER_DATA)
-
 
 
   const getDifference = (todayValue, yesterdayValue) => {
@@ -132,16 +128,17 @@ const ReportPage = () => {
             <span className='font-semibold text-2xl'>{dailyData?.ankiCardsByDate?.count}</span>
             <span className="absolute bottom-2 right-2 text-sm text-gray-400">({getDifference(dailyData?.ankiCardsByDate?.count, yesterdayData?.ankiCardsByDate?.count)} thẻ)</span>
           </div>
-          <p className="block text-white">Thẻ mới hôm nay</p>
-          {dailyData?.ankiCardsByDate?.cards.length > 0 && (
-              <ul className="mt-1 text-sm text-gray-300 flex gap-1 flex-wrap">
-                {dailyData.ankiCardsByDate.cards.map((card, index) => (
-                  <ExternalUrl href={`https://mazii.net/vi-VN/search/word/javi/${card.front}`} key={index} className="border-2 border-gray-600 px-2 py-1 rounded-md hover:bg-blue-500/10 hover:border-blue-500 cursor-pointer">
-                    {card.front}
-                  </ExternalUrl>
-                ))}
-              </ul>
-            )}
+              {dailyData?.ankiCardsByDate?.cards.length > 0 &&
+              <>
+                <p className="block text-white">Thẻ mới hôm nay</p>
+                <ul className="mt-1 text-sm text-gray-300 flex gap-1 flex-wrap">
+                  {dailyData.ankiCardsByDate.cards.map((card, index) => (
+                    <ExternalUrl href={`https://mazii.net/vi-VN/search/word/javi/${card.front}`} key={index} className="border-2 border-gray-600 px-2 py-1 rounded-md hover:bg-blue-500/10 hover:border-blue-500 cursor-pointer">
+                      {card.front}
+                    </ExternalUrl>
+                  ))}
+                </ul>
+              </>}
           </div>
         )}
       </div>
@@ -184,7 +181,7 @@ const ReportPage = () => {
     </div>
 
 
-    <div className="bg-gray-800 text-white p-4 rounded mt-4">
+    <div className="bg-gray-800 text-white rounded mt-4">
       {loadingScatter ? (
         <p>Đang tải...</p>
       ) : (
@@ -193,7 +190,7 @@ const ReportPage = () => {
             <ScatterChart>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis type="number" dataKey="x" name="Số ngày từ khi thêm thẻ" unit=" ngày" />
-              <YAxis type="number" dataKey="y" name="Review Score" unit=" điểm" />
+              <YAxis type="number" dataKey="y" name="Review Score" unit="" />
               <Tooltip content={<CustomTooltip />} />
               <Scatter name="Thẻ" data={scatterPlotData} fill="#38bdf8" />
             </ScatterChart>
