@@ -239,6 +239,12 @@ const LibraryPage = () => {
           >
             {isGeneratingQuestion && activeTab == "quiz" ? "Đang tạo câu hỏi..." : "Tạo câu hỏi ngẫu nhiên 🎲"}
           </button>
+          <Link
+              to='/mocktest'
+              className="text-center text-white px-4 py-2 rounded-md border-2 border-blue-700 "
+            >
+              JLPT BootCamp ☕
+          </Link>
         </div>
 
 

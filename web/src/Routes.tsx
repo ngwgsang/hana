@@ -15,7 +15,7 @@ import ReportPage from './pages/ReportPage/ReportPage'
 const Routes = () => {
   return (
     <Router>
-      <Route path="/report" page={ReportPage} name="report" />
+      <Route path="/mocktest" page={MocktestPage} name="mocktest" />
       <Route path="/login" page={LoginPage} name="login" />
       {/* <Route path="/chat" page={ChatPage} name="chat" />
       <Route path="/agents" page={AgentsPage} name="agents" /> */}
