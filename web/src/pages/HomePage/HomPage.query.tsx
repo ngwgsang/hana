@@ -160,6 +160,15 @@ const GET_SCATTER_DATA = gql`
   }
 `
 
+const UPDATE_STUDY_PROGRESS = gql`
+mutation UpdateStudyProgress($status: String!) {
+  updateStudyProgress(status: $status) {
+    goodCount
+    normalCount
+    badCount
+  }
+}
+`
 
 export {
   BULK_CREATE_ANKI_CARDS,
@@ -174,5 +183,6 @@ export {
   GET_DAILY_REPORT,
   GET_WEEKLY_REPORT,
   GET_WEEKLY_PROGRESS,
-  GET_SCATTER_DATA
+  GET_SCATTER_DATA,
+  UPDATE_STUDY_PROGRESS
 }

@@ -17,7 +17,8 @@ import {
   UPDATE_ANKI_CARD,
   UPDATE_ANKI_CARD_POINT,
   DELETE_ANKI_CARD,
-  DELETE_ANKI_TAG
+  DELETE_ANKI_TAG,
+  UPDATE_STUDY_PROGRESS
 } from './HomPage.query'
 import { Router } from '@redwoodjs/router/serverRouter'
 
@@ -44,15 +45,6 @@ const HomePage = () => {
   const tagFromURL = searchParams.get('tag'); // Lấy giá trị tag từ URL
 
 
-  const UPDATE_STUDY_PROGRESS = gql`
-  mutation UpdateStudyProgress($status: String!) {
-    updateStudyProgress(status: $status) {
-      goodCount
-      normalCount
-      badCount
-    }
-  }
-`
 
 const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
 
