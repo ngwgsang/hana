@@ -6,7 +6,7 @@ import Popup from 'src/components/Popup'
 import PingDot from 'src/components/PingDot'
 import ExternalUrl from 'src/components/ExternalUrl'
 import LoadingAnimation from 'src/components/LoadingAnimation'
-import { FunnelIcon, MagnifyingGlassIcon, PlusIcon, PencilSquareIcon, CloudArrowDownIcon, Squares2X2Icon } from '@heroicons/react/24/solid'
+import { BoltIcon, FunnelIcon, MagnifyingGlassIcon, PlusIcon, PencilSquareIcon, CloudArrowDownIcon, Squares2X2Icon } from '@heroicons/react/24/solid'
 import Papa from 'papaparse'
 import {
   BULK_CREATE_ANKI_CARDS,
@@ -617,6 +617,13 @@ const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
           className="text-white rounded bg-blue-600 hover:bg-blue-700 p-2"
         >
           <Squares2X2Icon className="h-6 w-6 text-white"/>
+        </Link>
+
+        <Link
+          to='/swipe-me'
+          className="text-white rounded bg-blue-600 hover:bg-blue-700 p-2"
+        >
+          <BoltIcon className="h-6 w-6 text-white"/>
         </Link>
       </div>
 
