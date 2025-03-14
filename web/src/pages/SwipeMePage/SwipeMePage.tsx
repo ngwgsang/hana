@@ -78,7 +78,7 @@ const SwipeMePage = () => {
       setIsFlipped(false) // Reset về mặt trước khi chuyển thẻ mới
       setAnimation("") // Reset animation
       setBorderColor("") // Reset border
-    }, 300)
+    }, 100)
   }
 
   const HandleSpecialText = (text) => {
@@ -98,7 +98,7 @@ const SwipeMePage = () => {
       <div className="relative w-full h-[80vh] sm:h-96 flex items-center justify-center overflow-hidden">
         {currentIndex < cards.length ? (
           <div
-            className={`absolute w-full h-full flex items-center justify-center rounded-xl shadow-lg transition-all duration-1000 ${animation}`}
+            className={`absolute w-full h-full flex items-center justify-center rounded-xl shadow-lg transition-all duration-500 ${animation}`}
             onClick={() => setIsFlipped(!isFlipped)} // Lật khi chạm vào thẻ
           >
             <div className={`relative w-full h-full flex items-center justify-center text-white p-8 rounded-xl ${borderColor == "" ? "bg-gray-800" : borderColor + " border-2 "}`}>
