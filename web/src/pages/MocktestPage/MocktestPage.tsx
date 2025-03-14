@@ -294,6 +294,7 @@ const MocktestPage = () => {
 
     setCorrectCount(correct);
     setSubmitted(true);
+    setIsSubmitDisabled(true);
     handleOpenPopup();
   };
 
@@ -402,6 +403,7 @@ const MocktestPage = () => {
                     name={`question-${index}`}
                     value={choice}
                     checked={isSelected}
+                    disabled={submitted}
                     onChange={() => handleSelectAnswer(index, choice)}
                     className="hidden"
                   />
