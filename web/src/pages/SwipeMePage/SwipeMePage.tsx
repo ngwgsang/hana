@@ -61,6 +61,9 @@ const SwipeMePage = () => {
       borderClass = "border-green-500 bg-green-600/10"
     }
 
+    setBorderColor(borderClass)
+    setAnimation(animClass)
+
     try {
       await updateAnkiCardPoint({
         variables: { id: currentCard.id, pointChange },
@@ -68,9 +71,6 @@ const SwipeMePage = () => {
     } catch (error) {
       console.error("Lỗi cập nhật điểm:", error)
     }
-
-    setBorderColor(borderClass)
-    setAnimation(animClass)
 
     // Chuyển thẻ sau 300ms
     setTimeout(() => {
