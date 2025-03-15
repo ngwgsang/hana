@@ -19,7 +19,7 @@ const App = ({ children }: AppProps) => {
   <FatalErrorBoundary page={FatalErrorPage}>
     <ThemeProvider>
       <GlobalProvider>
-      <RedwoodProvider titleTemplate="%PageTitle | %AppTitle">
+      <RedwoodProvider titleTemplate="%AppTitle">
         <RedwoodApolloProvider>{children}</RedwoodApolloProvider>
       </RedwoodProvider>
       </GlobalProvider>

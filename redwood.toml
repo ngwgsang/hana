@@ -6,7 +6,7 @@
 # https://redwoodjs.com/docs/app-configuration-redwood-toml
 
 [web]
-  title = "Hana🌻"
+  title = "Hana"
   port = 8910
   apiUrl = "/api"
   includeEnvironmentVariables = [

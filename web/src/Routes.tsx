@@ -19,6 +19,7 @@ const Routes = () => {
       <Route path="/swipe-me" page={SwipeMePage} name="swipeMe" />
       <Route path="/mocktest" page={MocktestPage} name="mocktest" />
       <Route path="/login" page={LoginPage} name="login" />
+      <Route path="/" page={LoginPage} name="" />
       {/* <Route path="/chat" page={ChatPage} name="chat" />
       <Route path="/agents" page={AgentsPage} name="agents" /> */}
       <Route path="/home" page={Home} name="home" />
