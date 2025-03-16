@@ -3,11 +3,10 @@ import { db } from 'src/lib/db'
 export const updateStudyProgress = async ({ status }) => {
   // Lấy giờ hiện tại theo múi giờ Việt Nam (GMT+7)
   const now = new Date()
-  const vietnamTimeZone = 'Asia/Ho_Chi_Minh'
 
   // Chuyển đổi sang giờ Việt Nam bằng `Intl.DateTimeFormat`
   const vietnamTime = new Date(
-    now.toLocaleString('en-US', { timeZone: vietnamTimeZone })
+    now.toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' })
   )
 
   // Lấy 00:00:00 của ngày hiện tại tại Việt Nam
@@ -62,33 +61,60 @@ export const updateStudyProgress = async ({ status }) => {
   }
 }
 
+// 🕒 Hàm chuyển đổi `Date` sang đầu ngày theo giờ Việt Nam (GMT+7)
+const getVietnamStartOfDay = (date: string | Date) => {
+  const vietnamTime = new Date(
+    new Date(date).toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' })
+  )
+  vietnamTime.setHours(0, 0, 0, 0) // Đưa về đầu ngày
+  return vietnamTime
+}
 
+// 🕒 Hàm chuyển đổi `Date` sang cuối ngày theo giờ Việt Nam (GMT+7)
+const getVietnamEndOfDay = (date: string | Date) => {
+  const vietnamTime = new Date(
+    new Date(date).toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' })
+  )
+  vietnamTime.setHours(23, 59, 59, 999) // Đưa về cuối ngày
+  return vietnamTime
+}
+
+// 📌 Tìm `studyProgress` của **một ngày** theo giờ Việt Nam
 export const studyProgressByDate = async ({ date }) => {
-  const parsedDate = new Date(date)
-  parsedDate.setHours(0, 0, 0, 0) // Đảm bảo về đầu ngày
-
-  console.log("🔍 Fetching studyProgress for:", parsedDate) // Debug log
-
+  const start = getVietnamStartOfDay(date)
+  const end = getVietnamEndOfDay(date)
+  console.log("🔍 Fetching studyProgressByWeek:", start, "to", end) // Debug log
   return db.studyProgress.findFirst({
-    where: { date: parsedDate },
+    where: {
+      date: {
+        gte: start,
+        lte: end,
+      },
+    },
+    select: {
+      date: true,
+      goodCount: true,
+      normalCount: true,
+      badCount: true,
+    },
+    orderBy: {
+      date: 'asc', // Sắp xếp theo ngày tăng dần
+    },
   })
 }
 
-
+// 📊 Lấy tổng số `studyProgress` trong khoảng thời gian theo múi giờ VN
 export const studyProgressByRange = async ({ startDate, endDate }) => {
-  const start = new Date(startDate)
-  start.setHours(0, 0, 0, 0)
-
-  const end = new Date(endDate)
-  end.setHours(23, 59, 59, 999)
+  const start = getVietnamStartOfDay(startDate)
+  const end = getVietnamEndOfDay(endDate)
 
   console.log("🔍 Fetching studyProgressByRange:", start, "to", end) // Debug log
 
   const result = await db.studyProgress.aggregate({
     where: {
       date: {
-        gte: start,
-        lte: end,
+        gte: start, // Lấy từ đầu ngày VN
+        lte: end,   // Đến cuối ngày VN
       },
     },
     _sum: {
@@ -107,12 +133,12 @@ export const studyProgressByRange = async ({ startDate, endDate }) => {
   }
 }
 
+// 📅 Lấy danh sách `studyProgress` theo tuần dựa trên múi giờ VN
 export const studyProgressByWeek = async ({ startDate, endDate }) => {
-  const start = new Date(startDate)
-  start.setHours(0, 0, 0, 0)
+  const start = getVietnamStartOfDay(startDate)
+  const end = getVietnamEndOfDay(endDate)
 
-  const end = new Date(endDate)
-  end.setHours(23, 59, 59, 999)
+  console.log("🔍 Fetching studyProgressByWeek:", start, "to", end) // Debug log
 
   const results = await db.studyProgress.findMany({
     where: {

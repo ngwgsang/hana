@@ -1,6 +1,6 @@
 import { useQuery, useMutation } from '@redwoodjs/web'
 import { useState } from 'react'
-import { GET_ANKI_CARDS, UPDATE_ANKI_CARD_POINT } from '../HomePage/HomPage.query'
+import { GET_ANKI_CARDS, UPDATE_ANKI_CARD_POINT, UPDATE_STUDY_PROGRESS } from '../HomePage/HomPage.query'
 import { ArrowUturnLeftIcon } from '@heroicons/react/24/solid'
 import { Link } from '@redwoodjs/router'
 import useSpacedRepetition from 'src/hook/useSpacedRepetition'
@@ -24,7 +24,7 @@ const SwipeMePage = () => {
 
 
   const [updateAnkiCardPoint] = useMutation(UPDATE_ANKI_CARD_POINT)
-
+  const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
   const [cards, setCards] = useState([]) // Danh sách thẻ hiển thị
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isFlipped, setIsFlipped] = useState(false) // Trạng thái lật thẻ
@@ -60,9 +60,13 @@ const SwipeMePage = () => {
     setAnimation(animClass)
 
     try {
+      await updateStudyProgress({
+        variables: { status }
+      })
       await updateAnkiCardPoint({
         variables: { id: currentCard.id, pointChange },
       })
+      // alert("OK")
     } catch (error) {
       console.error("Lỗi cập nhật điểm:", error)
     }

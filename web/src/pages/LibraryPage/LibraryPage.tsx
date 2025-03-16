@@ -199,6 +199,12 @@ const LibraryPage = () => {
 
   const repeatedColors = Array.from({ length: tags.length }, (_, i) => baseColors[i % baseColors.length]);
 
+  const VOCAB_GOAL = 10000;
+  const GRAMMAR_GOAL = 250;
+  const VOCAB_PROCESS = ( tagCardCount[1] + tagCardCount[2] ) * 100 / VOCAB_GOAL
+  const GRAMMAR_PROCESS = ( tagCardCount[3] ) * 100 / GRAMMAR_GOAL
+  const OVERALL_PROCESS = VOCAB_PROCESS * 0.5 + GRAMMAR_PROCESS * 0.5
+
   return (
     <main className="p-4 mx-auto w-full sm:w-[85%] md:w-[75%] lg:w-[50%]">
       <LoadingAnimation state={tagsLoading && cardsLoading} texts={['Đang tải dữ liệu...', '']} />
@@ -224,8 +230,8 @@ const LibraryPage = () => {
       <section className='mt-4'>
         <h2 className="my-4 text-white font-semibold text-2xl ">Tính năng 💫</h2>
 
-        <div className='grid grid-cols-2 gap-1'>
-          <button
+        <div className='grid grid-cols-1 gap-1'>
+          {/* <button
             type="button"
             onClick={calculatePerformance}
             className="text-white px-4 py-2 rounded-md border-2 border-blue-700"
@@ -238,15 +244,30 @@ const LibraryPage = () => {
             className="text-white px-4 py-2 rounded-md border-2 border-blue-700 "
           >
             {isGeneratingQuestion && activeTab == "quiz" ? "Đang tạo câu hỏi..." : "Tạo câu hỏi ngẫu nhiên 🎲"}
-          </button>
+          </button> */}
+          <div className='mt-4 mb-2 grid grid-cols-3 gap-2 w-full'>
+            <div className="relative flex items-center justify-center px-4 py-12 rounded-md bg-violet-500/10 border-violet-600 border-4 text-white text-2xl font-semibold">
+              <span className='absolute top-1 left-1 text-sm px-2 py-1'>Tỉ lệ Pass</span>
+              {OVERALL_PROCESS}%
+            </div>
+            <div className="relative flex items-center justify-center px-4 py-12 rounded-md bg-sky-500/10 border-sky-600 border-4 text-white text-2xl font-semibold">
+              <span className='absolute top-1 left-1 text-sm px-2 py-1'>Từ vựng</span>
+              {VOCAB_PROCESS}%
+
+            </div>
+            <div className="relative flex items-center justify-center px-4 py-12 rounded-md bg-orange-500/10 border-orange-600 border-4 text-white text-2xl font-semibold">
+              <span className='absolute top-1 left-1 text-sm px-2 py-1'>Ngữ pháp</span>
+              {GRAMMAR_PROCESS}%
+            </div>
+          </div>
+
           <Link
               to='/mocktest'
               className="text-center text-white px-4 py-2 rounded-md border-2 border-blue-700 "
             >
-              JLPT BootCamp ☕
+              JLPT 🔥
           </Link>
         </div>
-
 
         {isCalcPerformance && activeTab == "performance" && (
           <LoadingAnimation state={isLoading} texts={[

@@ -23,12 +23,12 @@ const CustomTooltip = ({ active, payload }) => {
 
 const ReportPage = () => {
 
-  const global = useGlobal();
-  useEffect(() => {
-    if (global.isAuth == false) {
-      navigate("/login")
-    }
-  }, [])
+  // const global = useGlobal();
+  // useEffect(() => {
+  //   if (global.isAuth == false) {
+  //     navigate("/login")
+  //   }
+  // }, [])
 
   const today = formatISO(new Date(), { representation: 'complete' }) // YYYY-MM-DDTHH:mm:ss.sssZ
   const yesterday = formatISO(subDays(new Date(), 1), { representation: 'complete' })
