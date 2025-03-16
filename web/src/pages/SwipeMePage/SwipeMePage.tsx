@@ -3,30 +3,25 @@ import { useState } from 'react'
 import { GET_ANKI_CARDS, UPDATE_ANKI_CARD_POINT } from '../HomePage/HomPage.query'
 import { ArrowUturnLeftIcon } from '@heroicons/react/24/solid'
 import { Link } from '@redwoodjs/router'
+import useSpacedRepetition from 'src/hook/useSpacedRepetition'
+
 
 const SwipeMePage = () => {
-  const { data, loading, error } = useQuery(GET_ANKI_CARDS, {
-    variables: { searchTerm: '', tagIds: [] },
+
+  const { data, loading, error, refetch } = useQuery(GET_ANKI_CARDS, {
+    variables: { searchTerm: '', tagIds: [] }, // Không cần skip/take nữa
     onCompleted: (data) => {
-      if (!data?.ankiCards) return
+      if (!data?.ankiCards) return;
 
-      const currentDate = new Date()
-      const alpha = 0.7
-      const sortedCards = data.ankiCards
-        .map((card) => {
-          const enrollDate = card.enrollAt ? new Date(card.enrollAt) : new Date()
-          const daysSinceEnroll = isNaN(enrollDate)
-            ? 0
-            : (currentDate - enrollDate) / (1000 * 60 * 60 * 24)
-          const point = card.point !== null && !isNaN(card.point) ? parseInt(card.point, 10) : 0
+      const sortedCards = data.ankiCards.map((card) => {
+        const { reviewScore } = useSpacedRepetition(card.point, card.enrollAt);
+        return { ...card, reviewScore };
+      }).sort((a, b) => a.reviewScore - b.reviewScore); // Sắp xếp tăng dần theo reviewScore
 
-          return { ...card, reviewScore: point + alpha * daysSinceEnroll }
-        })
-        .sort((a, b) => a.reviewScore - b.reviewScore) // Sắp xếp tăng dần theo reviewScore
-
-      setCards(sortedCards)
+      setCards(sortedCards);
     },
-  })
+  });
+
 
   const [updateAnkiCardPoint] = useMutation(UPDATE_ANKI_CARD_POINT)
 
@@ -103,12 +98,12 @@ const SwipeMePage = () => {
           >
             <div className={`relative w-full h-full flex items-center justify-center text-white p-8 rounded-xl ${borderColor == "" ? "bg-gray-800" : borderColor + " border-2 "}`}>
               {/* Mặt trước */}
-              <div className={`absolute w-full h-full flex items-center justify-center transition-all duration-500 ${isFlipped ? "opacity-0" : "opacity-100"}`}>
+              <div className={`w-full h-full items-center justify-center transition-all duration-500 ${isFlipped ? "hidden" : "flex"}`}>
                 <p className="text-3xl font-bold">{cards[currentIndex].front}</p>
               </div>
 
               {/* Mặt sau */}
-              <div className={`absolute w-full h-full flex items-center justify-center transition-all duration-500 ${isFlipped ? "opacity-100" : "opacity-0"}`}>
+              <div className={`w-full h-full items-center justify-center transition-all duration-500 ${isFlipped ? "flex" : "hidden"}`}>
                 <div className="text-xl font-medium text-center" dangerouslySetInnerHTML={{ __html: HandleSpecialText(cards[currentIndex].back) }}></div>
               </div>
             </div>

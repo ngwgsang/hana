@@ -7,6 +7,8 @@ import { Link, navigate } from '@redwoodjs/router'
 import { AcademicCapIcon, Squares2X2Icon } from '@heroicons/react/24/solid'
 import { useGlobal } from 'src/context/GlobalContext'
 import ExternalUrl from 'src/components/ExternalUrl/ExternalUrl'
+import useSpacedRepetition from 'src/hook/useSpacedRepetition'
+
 
 const CustomTooltip = ({ active, payload }) => {
   if (active && payload && payload.length) {
@@ -58,35 +60,22 @@ const ReportPage = () => {
     return diff > 0 ? `+${diff}` : diff
   }
 
-  const alpha = 0.7; // Hệ số trọng số
 
   const scatterPlotData = scatterData?.ankiCards
-    .filter(card => card.enrollAt) // Bỏ qua thẻ không có enrollAt
-    .map((card) => {
-      const enrollDate = card.enrollAt ? new Date(card.enrollAt) : new Date();
+  .filter(card => card.enrollAt) // Bỏ qua thẻ không có enrollAt
+  .map((card) => {
+    const { reviewScore, daysSinceEnroll } = useSpacedRepetition(card.point, card.enrollAt);
 
-      if (isNaN(enrollDate.getTime())) {
-        console.warn("⚠ Lỗi: enrollAt không hợp lệ:", card.front, card.enrollAt);
-        return null;
-      }
+    return {
+      x: daysSinceEnroll,  // Trục X là số ngày từ khi thêm
+      y: reviewScore,      // Trục Y sử dụng reviewScore
+      front: card.front,   // Nội dung thẻ
+    };
+  })
+  .filter(point => point !== null) // Bỏ các điểm bị null
+  .sort((a, b) => a.y - b.y); // Sắp xếp theo reviewScore
 
-      // Tính số ngày từ lúc thẻ được thêm vào
-      const daysSinceEnroll = (new Date() - enrollDate) / (1000 * 60 * 60 * 24);
 
-      // Kiểm tra point hợp lệ
-      const point = card.point !== null && !isNaN(card.point) ? parseInt(card.point, 10) : 0;
-
-      // Tính reviewScore (giống HomePage.tsx)
-      const reviewScore = point + alpha * daysSinceEnroll;
-
-      return {
-        x: daysSinceEnroll,  // Trục X là số ngày từ khi thêm
-        y: reviewScore, // Trục Y sử dụng reviewScore
-        front: card.front,  // Nội dung thẻ
-      };
-    })
-    .filter(point => point !== null) // Bỏ các điểm bị null
-    .sort((a, b) => a.y - b.y); // Sắp xếp theo reviewScore
 
   const chartData = weeklyProgressData?.studyProgressByWeek.map((day) => ({
     date: format(new Date(day.date), 'EEE'), // Hiển thị thứ trong tuần

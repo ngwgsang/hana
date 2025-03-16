@@ -21,7 +21,7 @@ import {
   UPDATE_STUDY_PROGRESS
 } from './HomPage.query'
 import { Router } from '@redwoodjs/router/serverRouter'
-
+import useSpacedRepetition from 'src/hook/useSpacedRepetition'
 
 
 const HomePage = () => {
@@ -68,14 +68,9 @@ const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
     onCompleted: (data) => {
       if (!data?.ankiCards) return;
 
-      const currentDate = new Date();
-      const alpha = 0.7;
       const sortedCards = data.ankiCards.map((card) => {
-        const enrollDate = card.enrollAt ? new Date(card.enrollAt) : new Date();
-        const daysSinceEnroll = isNaN(enrollDate) ? 0 : (currentDate - enrollDate) / (1000 * 60 * 60 * 24);
-        const point = card.point !== null && !isNaN(card.point) ? parseInt(card.point, 10) : 0;
-
-        return { ...card, reviewScore: point + alpha * daysSinceEnroll };
+        const { reviewScore } = useSpacedRepetition(card.point, card.enrollAt);
+        return { ...card, reviewScore };
       }).sort((a, b) => a.reviewScore - b.reviewScore); // Sắp xếp tăng dần theo reviewScore
 
       setCards(sortedCards);
@@ -424,23 +419,24 @@ const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
 
             {/* Điểm số */}
             {
-                    card.point < -2 &&
+                    card.reviewScore < 0 &&
                       <span className="text-sm text-red-500 border bg-red-500/10 border-red-500  mt-2 py-1 px-2 rounded-md w-auto font-semibold">
                         <span>Cần ôn</span>
                       </span>
             }
             {
-                    card.point == -2 &&
+                    card.reviewScore == 0 &&
                       <span className="text-sm text-orange-500 bg-orange-500/10 border border-orange-500 mt-2 py-1 px-2 rounded-md w-auto font-semibold">
                         <span>Sắp đến hạn</span>
                       </span>
             }
             {
-                    card.point > -2 &&
+                    card.reviewScore > 0 &&
                       <span className="text-sm text-green-500 bg-green-500/10 border border-green-500 mt-2 py-1 px-2 rounded-md w-auto font-semibold">
                         <span>Chưa đến hạn</span>
                       </span>
             }
+            {/* <span>{card.reviewScore} {card.enrollAt}</span> */}
 
             {/* Nút cập nhật điểm */}
             <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 flex gap-2 bg-gray-800 p-2 rounded-lg shadow-lg transition-opacity duration-300">
