@@ -275,7 +275,6 @@ const MocktestPage = () => {
         correct += 1;
         let pointChange = 1;
         let status = "good";
-
         try {
           updateStudyProgress({
             variables: { status }
@@ -284,7 +283,21 @@ const MocktestPage = () => {
           updateAnkiCardPoint({
             variables: { id: q.cardId, pointChange }, // 🔥 Sử dụng `q.cardId`
           });
+          // alert(`Cập nhật thẻ ID: ${q.cardId} - ${q.word} ✅`);
+        } catch (error) {
+          console.error("Lỗi cập nhật điểm:", error);
+        }
+      } else {
+        let pointChange = -1;
+        let status = "bad";
+        try {
+          updateStudyProgress({
+            variables: { status }
+          });
 
+          updateAnkiCardPoint({
+            variables: { id: q.cardId, pointChange }, // 🔥 Sử dụng `q.cardId`
+          });
           // alert(`Cập nhật thẻ ID: ${q.cardId} - ${q.word} ✅`);
         } catch (error) {
           console.error("Lỗi cập nhật điểm:", error);

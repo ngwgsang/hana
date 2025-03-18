@@ -595,7 +595,7 @@ const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
 
       <div className='fixed right-2 bottom-4 sm:bottom-2 flex gap-2 flex-col-reverse transition-transform'>
         {/* Nút thêm thẻ */}
-        <button onClick={handleAdd} className=" bg-blue-600 text-white rounded hover:bg-blue-700 p-2 hidden sm:flex">
+        <button onClick={handleAdd} className=" bg-blue-600 text-white rounded hover:bg-blue-700 p-2">
           <PlusIcon className="h-6 w-6 text-white"></PlusIcon>
         </button>
 

@@ -201,8 +201,8 @@ const LibraryPage = () => {
 
   const VOCAB_GOAL = 10000;
   const GRAMMAR_GOAL = 250;
-  const VOCAB_PROCESS = ( tagCardCount[1] + tagCardCount[2] ) * 100 / VOCAB_GOAL
-  const GRAMMAR_PROCESS = ( tagCardCount[3] ) * 100 / GRAMMAR_GOAL
+  const VOCAB_PROCESS = Math.round(( tagCardCount[1] + tagCardCount[2] ) * 10000 / VOCAB_GOAL ) / 100
+  const GRAMMAR_PROCESS = Math.round(( tagCardCount[3] ) * 10000/ GRAMMAR_GOAL) / 100
   const OVERALL_PROCESS = VOCAB_PROCESS * 0.5 + GRAMMAR_PROCESS * 0.5
 
   return (
