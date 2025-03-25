@@ -61,8 +61,12 @@ const questionTypePrompt = {
 
   Ví dụ
   **Câu hỏi:** この仕事は＿＿＿＿がある人でなければできません。
-  **Đáp án:** ① 経験 ② 知識 ③ 能力 ④ 自信
-  **Đáp án đúng:** ① 経験
+  **Đáp án:**
+  経験
+  知識
+  能力
+  自信
+  **Đáp án đúng:** 経験
   **Giải thích:** Cụm "なければできません" mang nghĩa **điều kiện bắt buộc**, vì vậy "kinh nghiệm" (経験) là lựa chọn phù hợp nhất.
   `,
   understand: `
@@ -71,8 +75,12 @@ const questionTypePrompt = {
 
   Ví dụ
   **Câu hỏi:** 「彼の話はうそばかりだ」とはどういう意味ですか？
-  **Đáp án:** ① 彼は正直な人だ ② 彼の話は信用できない ③ 彼は面白い話をする ④ 彼の話は本当のことばかりだ
-  **Đáp án đúng:** ② 彼の話は信用できない
+  **Đáp án:**
+  彼は正直な人だ
+  彼の話は信用できない
+  彼は面白い話をする
+  彼の話は本当のことばかりだ
+  **Đáp án đúng:** 彼の話は信用できない
   **Giải thích:** "うそばかり" có nghĩa là "chỉ toàn nói dối", nên đáp án đúng là "彼の話は信用できない" (Câu chuyện của anh ta không đáng tin cậy).
   `,
 
@@ -82,8 +90,12 @@ const questionTypePrompt = {
 
   Ví dụ
   **Câu hỏi:** Chọn từ phù hợp nhất với nghĩa của câu sau: 「この商品はとても人気があり、＿＿＿します。」
-  **Đáp án:** ① 売り切れ ② 買い物 ③ 注文 ④ 割引
-  **Đáp án đúng:** ① 売り切れ
+  **Đáp án:**
+  売り切れ
+  買い物
+  注文
+  割引
+  **Đáp án đúng:**  売り切れ
   **Giải thích:** Cụm "とても人気があり" (rất phổ biến) gợi ý rằng sản phẩm **đã được bán hết** (売り切れ).
   `,
 
@@ -94,8 +106,12 @@ const questionTypePrompt = {
   Ví dụ
 
   **Câu hỏi:** 「温暖化」の意味は何ですか？
-  **Đáp án:** ① 暖かくなること ② 冷たくなること ③ 風が強くなること ④ 空気がきれいになること
-  **Đáp án đúng:** ① 暖かくなること
+  **Đáp án:**
+  暖かくなること
+  冷たくなること
+  風が強くなること
+  空気がきれいになること
+  **Đáp án đúng:** 暖かくなること
   **Giải thích:** "温暖化" (biến đổi khí hậu) có nghĩa là "trở nên ấm hơn".
   `,
 
@@ -107,12 +123,12 @@ const questionTypePrompt = {
 
   **Câu hỏi:** 次の単語の読み方は何ですか？「温暖化」
   **Đáp án:**
-  ① おんだんか
-  ② あたたかか
-  ③ ぬくもりか
-  ④ ひだまりか
-  **Đáp án đúng:** ① おんだんか
-  **Giải thích:** "温暖化" được đọc là "おんだんか" (ondanka), là cách phát âm on'yomi (音読み) của các chữ Hán 温 (おん) và 暖 (だん).
+  おんだんか
+  あたたかか
+  ぬくもりか
+  ひだまりか
+  **Đáp án đúng:** おんだんか
+  **Giải thích:** "温暖化" được đọc là "おんだんか" (ondanka), có nghĩa là "Sự nóng lên toàn cầu".
   `
 }
 
