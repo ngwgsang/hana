@@ -9,7 +9,8 @@ import { Metadata, useQuery, useMutation, gql } from '@redwoodjs/web'
 import {
   GET_ANKI_CARDS,
   UPDATE_ANKI_CARD_POINT,
-  UPDATE_STUDY_PROGRESS
+  UPDATE_STUDY_PROGRESS,
+  GET_ANKI_TAGS
 } from '../HomePage/HomPage.query'
 
 
@@ -158,6 +159,14 @@ const MocktestPage = () => {
   const [updateAnkiCardPoint] = useMutation(UPDATE_ANKI_CARD_POINT)
   const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
 
+  const { data: tagsData, loading: tagsLoading } = useQuery(GET_ANKI_TAGS);
+  const tags = tagsData?.ankiTags || [];
+  const [selectedTagId, setSelectedTagId] = useState("");
+
+  const handleTagChange = (e) => {
+    setSelectedTagId(e.target.value);
+  };
+
 
   const handleNumQuestionsChange = (event) => {
     setNumQuestions(parseInt(event.target.value, 10));
@@ -174,16 +183,37 @@ const MocktestPage = () => {
   //   setRandomWords(shuffled.slice(0, 10).map(card => card.front));
   //   setIdx(shuffled.slice(0, 10).map(card => card.id));
   // }
+  // const handleShuffle = () => {
+  //   const shuffled = [...cardsData.ankiCards].sort(() => 0.5 - Math.random()).slice(0, numQuestions);
+  //   const shuffledWords = shuffled.map(card => card.front);
+  //   const shuffledIdx = shuffled.map(card => card.id);
+  //   setRandomWords(shuffledWords);
+  //   setIdx(shuffledIdx);
+  // };
   const handleShuffle = () => {
-    const shuffled = [...cardsData.ankiCards].sort(() => 0.5 - Math.random()).slice(0, numQuestions);
+    if (!cardsData?.ankiCards) return;
 
-    const shuffledWords = shuffled.map(card => card.front);
-    const shuffledIdx = shuffled.map(card => card.id);
+    let filteredCards = [...cardsData.ankiCards];
 
-    setRandomWords(shuffledWords);
-    setIdx(shuffledIdx);
+    // Nếu có chọn tag, chỉ lấy các thẻ thuộc tag đó
+    if (selectedTagId) {
+      filteredCards = filteredCards.filter(card =>
+        card.tags.some(tag => tag.id == selectedTagId)
+      );
+    }
+
+    // Nếu số lượng thẻ ít hơn numQuestions, giới hạn lại
+    const limit = Math.min(numQuestions, filteredCards.length);
+
+    const shuffled = filteredCards
+      .sort(() => 0.5 - Math.random())
+      .slice(0, limit);
+
+    setRandomWords(shuffled.map(card => card.front));
+    setIdx(shuffled.map(card => card.id));
   };
-  useEffect(handleShuffle, [numQuestions])
+
+  useEffect(handleShuffle, [numQuestions, selectedTagId])
 
   const handleClosePopup = () => {
     setIsOpen(false)
@@ -370,6 +400,25 @@ const MocktestPage = () => {
 
             </select>
           </div>
+
+          {/* Chọn tag */}
+          <div className="flex-1">
+            <label className="block text-sm text-gray-300">Chọn Tag:</label>
+            <select
+              value={selectedTagId}
+              onChange={handleTagChange}
+              className="bg-gray-700 text-white p-2 rounded w-full"
+            >
+              <option value="">-- Tất cả --</option>
+              {tags.map(tag => (
+                <option key={tag.id} value={tag.id}>
+                  {tag.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+
         </div>
 
         <LoadingAnimation state={isLoading} texts={["Đang tạo câu hỏi...", (
