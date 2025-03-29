@@ -28,7 +28,7 @@ export const updateAnkiCard: MutationResolvers['updateAnkiCard'] = ({ id, input 
     data: {
       front: input.front,
       back: input.back,
-      enrollAt: input.enrollAt ?? undefined, // Chỉ cập nhật nếu có giá trị
+      enrollAt: input.enrollAt ?? new Date(), // ✅ Nếu không có thì gán hôm nay
       point: input.point ?? undefined, // Chỉ cập nhật nếu có giá trị
       tags: input.tagIds
         ? { set: [], connect: input.tagIds.map((tagId) => ({ id: tagId })) } // Cập nhật lại tag
@@ -99,6 +99,7 @@ export const updateAnkiCardPoint: MutationResolvers['updateAnkiCardPoint'] = asy
   return db.ankiCard.update({
     where: { id },
     data: {
+      enrollAt: new Date(),
       point: {
         increment: pointChange, // Cộng dồn vào điểm hiện tại
       },

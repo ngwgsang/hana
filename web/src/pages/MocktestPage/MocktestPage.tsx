@@ -12,126 +12,7 @@ import {
   UPDATE_STUDY_PROGRESS,
   GET_ANKI_TAGS
 } from '../HomePage/HomPage.query'
-
-
-const questionTypePrompt = {
-//   all: `Mỗi câu hỏi phải thuộc **một trong 5 dạng bài JLPT**:
-// 1. **Ngữ pháp** - Chọn cách sử dụng ngữ pháp đúng.
-// 2. **Đọc hiểu** - Chọn cách giải thích đúng nhất cho một đoạn văn.
-// 3. **Từ vựng theo ngữ cảnh** - Chọn từ thích hợp nhất để hoàn thành câu.
-// 4. **Ý nghĩa của Kanji** - Chọn nghĩa chính xác của chữ Hán.
-// 5. **Hoàn thành câu** - Chọn từ thích hợp nhất để hoàn thành câu.
-
-// Các phần giải thích phải được viết bằng tiếng Việt.
-
-// ### **Ví dụ về 5 dạng bài JLPT (Few-Shot Examples)**:
-// #### Ví dụ 1 - Ngữ pháp
-// **Câu hỏi:** この仕事は＿＿＿＿がある人でなければできません。
-// **Đáp án:** ① 経験 ② 知識 ③ 能力 ④ 自信
-// **Đáp án đúng:** ① 経験
-// **Giải thích:** Cụm "なければできません" mang nghĩa **điều kiện bắt buộc**, vì vậy "kinh nghiệm" (経験) là lựa chọn phù hợp nhất.
-
-// #### Ví dụ 2 - Đọc hiểu
-// **Câu hỏi:** 「彼の話はうそばかりだ」とはどういう意味ですか？
-// **Đáp án:** ① 彼は正直な人だ ② 彼の話は信用できない ③ 彼は面白い話をする ④ 彼の話は本当のことばかりだ
-// **Đáp án đúng:** ② 彼の話は信用できない
-// **Giải thích:** "うそばかり" có nghĩa là "chỉ toàn nói dối", nên đáp án đúng là "彼の話は信用できない" (Câu chuyện của anh ta không đáng tin cậy).
-
-// #### Ví dụ 3 - Từ vựng theo ngữ cảnh
-// **Câu hỏi:** Chọn từ phù hợp nhất với nghĩa của câu sau: 「この商品はとても人気があり、＿＿＿します。」
-// **Đáp án:** ① 売り切れ ② 買い物 ③ 注文 ④ 割引
-// **Đáp án đúng:** ① 売り切れ
-// **Giải thích:** Cụm "とても人気があり" (rất phổ biến) gợi ý rằng sản phẩm **đã được bán hết** (売り切れ).
-
-// #### Ví dụ 4 - Ý nghĩa của Kanji
-// **Câu hỏi:** 「温暖化」の意味は何ですか？
-// **Đáp án:** ① 暖かくなること ② 冷たくなること ③ 風が強くなること ④ 空気がきれいになること
-// **Đáp án đúng:** ① 暖かくなること
-// **Giải thích:** "温暖化" (biến đổi khí hậu) có nghĩa là "trở nên ấm hơn".
-
-// #### Ví dụ 5 - Hoàn thành câu
-// **Câu hỏi:** 彼女は＿＿＿日本語を話すことができます。
-// **Đáp án:** ① ぺらぺら ② じっと ③ そろそろ ④ たっぷり
-// **Đáp án đúng:** ① ぺらぺら
-// **Giải thích:** "ぺらぺら" có nghĩa là **"trôi chảy"**, nên đây là lựa chọn chính xác.
-//   `,
-
-  grammar: `
-  Câu hỏi bạn tạo ra phải thuộc dạng
-  **Ngữ pháp**
-
-  Ví dụ
-  **Câu hỏi:** この仕事は＿＿＿＿がある人でなければできません。
-  **Đáp án:**
-  経験
-  知識
-  能力
-  自信
-  **Đáp án đúng:** 経験
-  **Giải thích:** Cụm "なければできません" mang nghĩa **điều kiện bắt buộc**, vì vậy "kinh nghiệm" (経験) là lựa chọn phù hợp nhất.
-  `,
-  understand: `
-  Câu hỏi bạn tạo ra phải thuộc dạng
-  **Thông hiểu**
-
-  Ví dụ
-  **Câu hỏi:** 「彼の話はうそばかりだ」とはどういう意味ですか？
-  **Đáp án:**
-  彼は正直な人だ
-  彼の話は信用できない
-  彼は面白い話をする
-  彼の話は本当のことばかりだ
-  **Đáp án đúng:** 彼の話は信用できない
-  **Giải thích:** "うそばかり" có nghĩa là "chỉ toàn nói dối", nên đáp án đúng là "彼の話は信用できない" (Câu chuyện của anh ta không đáng tin cậy).
-  `,
-
-  usage: `
-  Câu hỏi bạn tạo ra phải thuộc dạng
-  **Cách dùng từ**
-
-  Ví dụ
-  **Câu hỏi:** Chọn từ phù hợp nhất với nghĩa của câu sau: 「この商品はとても人気があり、＿＿＿します。」
-  **Đáp án:**
-  売り切れ
-  買い物
-  注文
-  割引
-  **Đáp án đúng:**  売り切れ
-  **Giải thích:** Cụm "とても人気があり" (rất phổ biến) gợi ý rằng sản phẩm **đã được bán hết** (売り切れ).
-  `,
-
-  meaning: `
-  Câu hỏi bạn tạo ra phải thuộc dạng
-  **Nghĩa của từ**
-
-  Ví dụ
-
-  **Câu hỏi:** 「温暖化」の意味は何ですか？
-  **Đáp án:**
-  暖かくなること
-  冷たくなること
-  風が強くなること
-  空気がきれいになること
-  **Đáp án đúng:** 暖かくなること
-  **Giải thích:** "温暖化" (biến đổi khí hậu) có nghĩa là "trở nên ấm hơn".
-  `,
-
-  kanji: `
-  Câu hỏi bạn tạo ra phải thuộc dạng
-  **Cách đọc Kanji**
-
-  Ví dụ
-
-  **Câu hỏi:** 次の単語の読み方は何ですか？「温暖化」
-  **Đáp án:**
-  おんだんか
-  あたたかか
-  ぬくもりか
-  ひだまりか
-  **Đáp án đúng:** おんだんか
-  **Giải thích:** "温暖化" được đọc là "おんだんか" (ondanka), có nghĩa là "Sự nóng lên toàn cầu".
-  `
-}
+import { QUESTION_TYPES } from './QuestionType';
 
 
 const MocktestPage = () => {
@@ -277,7 +158,7 @@ const MocktestPage = () => {
       Bạn là một người tạo đề thi tiếng Nhật chuyên về luyện thi JLPT.
       Nhiệm vụ của bạn là tạo ra các câu hỏi JLPT trung bình khó để tôi có thể luyện tập.
       ### RULE:
-      ${questionTypePrompt[questionType]}
+      ${QUESTION_TYPES[questionType].prompt}
 
       ### TASK: Hãy tạo ${numQuestions} câu hỏi mới dựa trên từ vựng sau: ${randomWords.join(", ")}.`;
 
@@ -357,8 +238,6 @@ const MocktestPage = () => {
     handleOpenPopup();
   };
 
-
-
   return (
     <main className="p-4 mx-auto w-full sm:w-3/4 lg:w-1/2 flex flex-col relative">
       <Metadata title="Mock Test" description="JLPT Practice Quiz" />
@@ -393,11 +272,15 @@ const MocktestPage = () => {
               className="bg-gray-700 text-white p-2 rounded w-full"
 
             >
-              <option value="kanji">Cách đọc Kanji</option>
+              {/* <option value="kanji">Cách đọc Kanji</option>
               <option value="understand">Thông hiểu</option>
               <option value="usage">Cách dùng từ</option>
-              <option value="meaning">Nghĩa của từ</option>
-
+              <option value="meaning">Nghĩa của từ</option> */}
+              {Object.entries(QUESTION_TYPES).map(([key, value]) => (
+                <option key={key} value={key}>
+                  {value.title}
+                </option>
+              ))}
             </select>
           </div>
 
