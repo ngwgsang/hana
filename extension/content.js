@@ -16,16 +16,16 @@
       boxShadow: "0 2px 6px rgba(0,0,0,0.2)"
     });
     document.body.appendChild(button);
-  
+
     let chatBox = null;
     let activeTab = "Trích xuất";
-  
+
     button.onclick = () => {
       if (chatBox) {
         chatBox.style.display = chatBox.style.display === "none" ? "flex" : "none";
         return;
       }
-  
+
       chatBox = document.createElement("div");
       Object.assign(chatBox.style, {
         position: "fixed",
@@ -43,11 +43,11 @@
         overflow: "hidden",
         fontFamily: "Arial, sans-serif"
       });
-  
+
       const tabs = ["Trích xuất", "Đọc hiểu"];
       let messagesData = JSON.parse(localStorage.getItem("chat_history") || "{}");
       if (!messagesData[activeTab]) messagesData[activeTab] = [];
-  
+
       const tabContainer = document.createElement("div");
       Object.assign(tabContainer.style, {
         display: "flex",
@@ -55,13 +55,13 @@
         borderBottom: "1px solid #ddd",
         background: "#f1f1f1"
       });
-  
+
       const tabGroup = document.createElement("div");
       Object.assign(tabGroup.style, {
         display: "flex",
         flex: "1"
       });
-  
+
       tabs.forEach(tab => {
         const tabBtn = document.createElement("div");
         tabBtn.textContent = tab;
@@ -74,22 +74,22 @@
           fontWeight: "bold",
           borderBottom: tab === activeTab ? "3px solid #4CAF50" : "none"
         });
-  
+
         tabBtn.onclick = () => {
           activeTab = tab;
           [...tabGroup.children].forEach(child => {
             child.style.borderBottom = "none";
           });
           tabBtn.style.borderBottom = "3px solid #4CAF50";
-  
+
           if (!messagesData[activeTab]) messagesData[activeTab] = [];
           renderMessages();
           renderFooter();
         };
-  
+
         tabGroup.appendChild(tabBtn);
       });
-  
+
       const clearBtn = document.createElement("div");
       clearBtn.textContent = "🔄️";
       clearBtn.title = "Xoá lịch sử tab hiện tại";
@@ -99,7 +99,7 @@
         fontSize: "18px",
         userSelect: "none"
       });
-  
+
       clearBtn.onclick = () => {
         if (confirm(`Bạn có chắc muốn xoá toàn bộ lịch sử của tab "${activeTab}" không?`)) {
           messagesData[activeTab] = [];
@@ -107,10 +107,10 @@
           renderMessages();
         }
       };
-  
+
       tabContainer.appendChild(tabGroup);
       tabContainer.appendChild(clearBtn);
-  
+
       const messagesContainer = document.createElement("div");
       Object.assign(messagesContainer.style, {
         flex: "1",
@@ -120,23 +120,23 @@
         display: "flex",
         flexDirection: "column"
       });
-  
+
       const footerContainer = document.createElement("div");
-  
+
       chatBox.appendChild(tabContainer);
       chatBox.appendChild(messagesContainer);
       chatBox.appendChild(footerContainer);
       document.body.appendChild(chatBox);
-  
+
       const saveHistory = () => {
         localStorage.setItem("chat_history", JSON.stringify(messagesData));
       };
-  
+
       const renderMessageItem = (msg, index) => {
         const { text, sender, type = "text", meta = {} } = msg;
         const msgWrapper = document.createElement("div");
         msgWrapper.dataset.index = index;
-  
+
         const msgDiv = document.createElement("div");
         msgDiv.textContent = text;
         Object.assign(msgDiv.style, {
@@ -149,7 +149,7 @@
           whiteSpace: "pre-wrap"
         });
         msgWrapper.appendChild(msgDiv);
-  
+
         if (type === "flashcard") {
           const saveBtn = document.createElement("button");
           saveBtn.textContent = "💾 Lưu vào bộ sưu tập";
@@ -164,22 +164,35 @@
             borderRadius: "5px",
             cursor: "pointer"
           });
-  
+
           saveBtn.onclick = () => {
             alert(`Lưu "${meta.front}" vào bộ sưu tập`);
             // Xóa tin nhắn này khỏi data và re-render
+
+            fetch('http://localhost:8911/agentAddFlashcard', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                front: meta.front,
+                back: meta.back,
+              }),
+            })
+              .then((res) => res.json())
+              .then((data) => console.log('📥 Kết quả:', data))
+
+
             messagesData[activeTab].splice(index, 1);
             saveHistory();
             renderMessages();
           };
-  
+
           msgWrapper.appendChild(saveBtn);
         }
-  
+
         messagesContainer.appendChild(msgWrapper);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
       };
-  
+
       const addNewMessage = (text, sender, type = "text", meta = {}) => {
         const msg = { text, sender, type, meta };
         messagesData[activeTab].push(msg);
@@ -189,20 +202,27 @@
         saveHistory();
         renderMessages();
       };
-  
+
       const renderMessages = () => {
         messagesContainer.innerHTML = "";
         messagesData[activeTab].forEach((msg, index) => renderMessageItem(msg, index));
       };
-  
-      const fakeResponse = (msg) => {
-        return new Promise(resolve => {
-          setTimeout(() => {
-            resolve(`🤖 [${activeTab}] Bạn vừa nói: "${msg}"`);
-          }, 800);
+
+      const agentAction = async (msg) => {
+        endpoint = 'http://localhost:8911/agentAction'
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ prompt: msg }),
         });
+
+        const data = await response.json();
+        console.log('📦 Phản hồi từ API:', data);
+        return data.response;
       };
-  
+
       const renderFooter = () => {
         footerContainer.innerHTML = "";
         if (activeTab === "Trích xuất") {
@@ -218,7 +238,7 @@
             cursor: "pointer",
             fontWeight: "bold"
           });
-  
+
           extractBtn.onclick = () => {
             const front = document.querySelector(".main-word")?.innerText?.trim();
 
@@ -245,7 +265,7 @@
             padding: "10px",
             borderTop: "1px solid #ddd"
           });
-  
+
           const input = document.createElement("input");
           input.type = "text";
           input.placeholder = "Nhập tin nhắn...";
@@ -256,7 +276,7 @@
             borderRadius: "5px",
             marginRight: "5px"
           });
-  
+
           const sendButton = document.createElement("button");
           sendButton.textContent = "Gửi";
           Object.assign(sendButton.style, {
@@ -267,28 +287,28 @@
             borderRadius: "5px",
             cursor: "pointer"
           });
-  
+
           inputContainer.appendChild(input);
           inputContainer.appendChild(sendButton);
           footerContainer.appendChild(inputContainer);
-  
+
           sendButton.onclick = async () => {
             const msg = input.value.trim();
             if (!msg) return;
             input.value = "";
             addNewMessage(msg, "user");
-            const res = await fakeResponse(msg);
+            const res = await agentAction(msg);
             addNewMessage(res, "bot");
           };
-  
+
           input.addEventListener("keypress", (e) => {
             if (e.key === "Enter") sendButton.click();
           });
         }
       };
-  
+
       renderMessages();
       renderFooter();
     };
   })();
-  
+
