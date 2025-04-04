@@ -3,5 +3,13 @@
     "env": {
       "ENABLE_EXPERIMENTAL_COREPACK": "1"
     }
+  },
+  "routes": [
+  {
+    "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    "headers": {
+      "Access-Control-Allow-Origin": "*"
+    }
   }
+]
 }
