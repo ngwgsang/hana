@@ -86,7 +86,7 @@ export const bulkCreateAnkiCards: MutationResolvers['bulkCreateAnkiCards'] = asy
           enrollAt: new Date(),
           point: -3,
           tags: {
-            connect: [{ id: 1 }],
+            connect: [{ id: 2 }],
           },
         },
       })
