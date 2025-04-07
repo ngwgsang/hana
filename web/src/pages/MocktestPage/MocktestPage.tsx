@@ -3,7 +3,7 @@ import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import LoadingAnimation from 'src/components/LoadingAnimation/LoadingAnimation';
 import Popup from 'src/components/Popup/Popup';
 import { Link, navigate } from '@redwoodjs/router'
-import { AcademicCapIcon, Squares2X2Icon } from '@heroicons/react/24/solid'
+import { AcademicCapIcon, Squares2X2Icon, InformationCircleIcon } from '@heroicons/react/24/solid'
 import { useGlobal } from 'src/context/GlobalContext'
 import { Metadata, useQuery, useMutation, gql } from '@redwoodjs/web'
 import {
@@ -13,6 +13,7 @@ import {
   GET_ANKI_TAGS
 } from '../HomePage/HomPage.query'
 import { QUESTION_TYPES } from './QuestionType';
+import ExternalUrl from 'src/components/ExternalUrl/ExternalUrl';
 
 
 const MocktestPage = () => {
@@ -330,6 +331,7 @@ const MocktestPage = () => {
             isIncorrect ? "border-red-500" : "border-gray-600"
           }`}
         >
+          <ExternalUrl className='absolute top-2 right-2' href={`https://mazii.net/vi-VN/search/word/javi/${q.word}`}><InformationCircleIcon className='w-6 h-6 text-blue-500/10 hover:text-blue-500'/></ExternalUrl>
           <span className="absolute border border-blue-500 bg-blue-500/10 rounded-md px-2 py-1 text-blue-500 font-semibold text-sm left-4 top-2">
             {q.questionType}
           </span>

@@ -240,7 +240,7 @@ const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
     const formattedCards = parsedCards.map((card) => ({
       front: card.front,
       back: card.back,
-      tagIds: [1], // Gán mặc định tag ID = 1
+      tagIds: [2], // Gán mặc định tag ID = 1
       point: -3, // 🔥 Đảm bảo thẻ từ CSV cũng có point = -3
     }));
 
