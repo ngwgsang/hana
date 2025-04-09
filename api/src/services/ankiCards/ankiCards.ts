@@ -76,24 +76,50 @@ export const deleteAnkiCard: MutationResolvers['deleteAnkiCard'] = async ({ id }
 }
 
 // ✅ Thêm nhiều thẻ từ CSV
+// export const bulkCreateAnkiCards: MutationResolvers['bulkCreateAnkiCards'] = async ({ input }) => {
+//   return Promise.all(
+//     input.map(async (card) => {
+//       const newCard = await db.ankiCard.create({
+//         data: {
+//           front: card.front,
+//           back: card.back,
+//           enrollAt: new Date(),
+//           point: -3,
+//           tags: {
+//             connect: [{ id: 2 }],
+//           },
+//         },
+//       })
+//       return newCard
+//     })
+//   )
+// }
+const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms))
+
 export const bulkCreateAnkiCards: MutationResolvers['bulkCreateAnkiCards'] = async ({ input }) => {
-  return Promise.all(
-    input.map(async (card) => {
-      const newCard = await db.ankiCard.create({
-        data: {
-          front: card.front,
-          back: card.back,
-          enrollAt: new Date(),
-          point: -3,
-          tags: {
-            connect: [{ id: 2 }],
-          },
+  const results = []
+
+  for (const card of input) {
+    const newCard = await db.ankiCard.create({
+      data: {
+        front: card.front,
+        back: card.back,
+        enrollAt: new Date(),
+        point: -3,
+        tags: {
+          connect: [{ id: 2 }],
         },
-      })
-      return newCard
+      },
     })
-  )
+
+    results.push(newCard)
+
+    await sleep(300)
+  }
+
+  return results
 }
+
 
 export const updateAnkiCardPoint: MutationResolvers['updateAnkiCardPoint'] = async ({ id, pointChange }) => {
   return db.ankiCard.update({
