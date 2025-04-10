@@ -94,10 +94,11 @@ export const deleteAnkiCard: MutationResolvers['deleteAnkiCard'] = async ({ id }
 //     })
 //   )
 // }
-
-export const bulkCreateAnkiCards: MutationResolvers['bulkCreateAnkiCards'] = ({ input }) => {
+const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms))
+export const bulkCreateAnkiCards: MutationResolvers['bulkCreateAnkiCards'] = async ({ input }) => {
   return Promise.all(
-    input.map( (card) => {
+    input.map( 
+      async (card) => {
       const newCard = db.ankiCard.create({
         data: {
           front: card.front,
@@ -109,7 +110,8 @@ export const bulkCreateAnkiCards: MutationResolvers['bulkCreateAnkiCards'] = ({ 
           },
         },
       })
-      return []
+      await sleep(100)  
+      return newCard
     })
   )
 }
