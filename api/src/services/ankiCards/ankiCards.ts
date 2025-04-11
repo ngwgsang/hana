@@ -95,18 +95,17 @@ export const deleteAnkiCard: MutationResolvers['deleteAnkiCard'] = async ({ id }
 //   )
 // }
 export const bulkCreateAnkiCards: MutationResolvers['bulkCreateAnkiCards'] = async ({ input }) => {
-  await db.ankiCard.createMany({
+  const result = await db.ankiCard.createMany({
     data: input.map((card) => ({
       front: card.front,
       back: card.back,
       enrollAt: new Date(),
       point: -3,
-      // ❌ Không hỗ trợ gán tags (mối quan hệ) trong createMany
     })),
-    skipDuplicates: true, // ⚠️ Bỏ qua nếu trùng khóa duy nhất
+    skipDuplicates: true,
   })
 
-  return input
+  return { count: result.count } // <-- update schema để trả về số lượng
 }
 
 

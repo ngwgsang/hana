@@ -35,11 +35,15 @@ export const schema = gql`
     point: Int
   }
 
+  type BulkCreateResult {
+    count: Int!
+  }
+
   type Mutation {
     createAnkiCard(input: CreateAnkiCardInput!): AnkiCard! @skipAuth
     updateAnkiCard(id: Int!, input: UpdateAnkiCardInput!): AnkiCard! @skipAuth
     deleteAnkiCard(id: Int!): AnkiCard! @skipAuth
-    bulkCreateAnkiCards(input: [CreateAnkiCardInput!]!): [AnkiCard!]! @skipAuth
+    bulkCreateAnkiCards(input: [CreateAnkiCardInput!]!): BulkCreateResult! @skipAuth
     updateAnkiCardPoint(id: Int!, pointChange: Int!): AnkiCard! @skipAuth
   }
 `

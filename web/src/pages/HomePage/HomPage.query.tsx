@@ -71,12 +71,19 @@ const DELETE_ANKI_CARD = gql`
 `
 
 // Mutation thêm nhiều thẻ từ CSV
+// const BULK_CREATE_ANKI_CARDS = gql`
+//   mutation BulkCreateAnkiCards($input: [CreateAnkiCardInput!]!) {
+//     bulkCreateAnkiCards(input: $input) {
+//       id
+//       front
+//       back
+//     }
+//   }
+// `
 const BULK_CREATE_ANKI_CARDS = gql`
   mutation BulkCreateAnkiCards($input: [CreateAnkiCardInput!]!) {
     bulkCreateAnkiCards(input: $input) {
-      id
-      front
-      back
+      count
     }
   }
 `

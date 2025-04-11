@@ -34,7 +34,6 @@ const HomePage = () => {
   const [cards, setCards] = useState([]) // Danh sách thẻ hiển thị
   const [isAddingCSV, setIsAddingCSV] = useState(false) // Kiểm tra trạng thái upload CSV
   const [parsedCards, setParsedCards] = useState([]) // Danh sách thẻ đã parse từ CSV
-  const [createAnkiCards] = useMutation(BULK_CREATE_ANKI_CARDS)
   const [isUploading, setIsUploading] = useState(false) // Trạng thái upload
   const [newTagName, setNewTagName] = useState('')
   const [isAddingTag, setIsAddingTag] = useState(false)
@@ -80,6 +79,7 @@ const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
   const [createAnkiCard] = useMutation(CREATE_ANKI_CARD, { onCompleted: () => refetch() })
   const [updateAnkiCard] = useMutation(UPDATE_ANKI_CARD, { onCompleted: () => refetch() })
   const [deleteAnkiCard] = useMutation(DELETE_ANKI_CARD, { onCompleted: () => refetch() })
+  const [createAnkiCards] = useMutation(BULK_CREATE_ANKI_CARDS, { onCompleted: () => refetch() })
   const [updateAnkiCardPoint] = useMutation(UPDATE_ANKI_CARD_POINT)
   const { data: tagData } = useQuery(GET_ANKI_TAGS, {
     onCompleted: (data) => {
@@ -486,8 +486,18 @@ const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
             <div className="flex flex-col gap-3">
               <input type="file" accept=".csv" onChange={handleFileUpload} className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-600 dark:border-gray-600 dark:placeholder-gray-400" />
               {parsedCards.length > 0 && (
-                <p className="text-sm text-gray-500">{parsedCards.length} thẻ sẽ được thêm</p>
+                <>
+                  <p className="text-sm text-gray-500">{parsedCards.length} thẻ sẽ được thêm</p>
+                  <div className='flex gap-1 flex-wrap'>
+                    {parsedCards.map( (e, index) => (
+                      <ExternalUrl href={`https://mazii.net/vi-VN/search/word/javi/${e.front}`} key={index} className="text-white border-2 border-gray-600 px-2 py-1 rounded-md hover:bg-blue-500/10 hover:border-blue-500 cursor-pointer">
+                      {e.front}
+                    </ExternalUrl>                      )
+                    )}
+                  </div>
+                </>
               )}
+
               <button
                 onClick={handleUploadCSV}
                 disabled={isUploading} // Vô hiệu hóa khi đang tải
