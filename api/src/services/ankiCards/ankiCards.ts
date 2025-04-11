@@ -94,55 +94,21 @@ export const deleteAnkiCard: MutationResolvers['deleteAnkiCard'] = async ({ id }
 //     })
 //   )
 // }
-const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms))
 export const bulkCreateAnkiCards: MutationResolvers['bulkCreateAnkiCards'] = async ({ input }) => {
-  return Promise.all(
-    input.map( 
-      async (card) => {
-      const newCard = db.ankiCard.create({
-        data: {
-          front: card.front,
-          back: card.back,
-          enrollAt: new Date(),
-          point: -3,
-          tags: {
-            connect: [{ id: 2 }],
-          },
-        },
-      })
-      await sleep(100)  
-      return newCard
-    })
-  )
+  await db.ankiCard.createMany({
+    data: input.map((card) => ({
+      front: card.front,
+      back: card.back,
+      enrollAt: new Date(),
+      point: -3,
+      // ❌ Không hỗ trợ gán tags (mối quan hệ) trong createMany
+    })),
+    skipDuplicates: true, // ⚠️ Bỏ qua nếu trùng khóa duy nhất
+  })
+
+  return input
 }
 
-// const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms))
-// export const bulkCreateAnkiCards: MutationResolvers['bulkCreateAnkiCards'] = async ({ input }) => {
-//   // Gửi acknowledgement ngay
-//   setTimeout(async () => {
-//     const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms))
-//     for (const card of input) {
-//       try {
-//         await db.ankiCard.create({
-//           data: {
-//             front: card.front,
-//             back: card.back,
-//             enrollAt: new Date(),
-//             point: -3,
-//             tags: {
-//               connect: [{ id: 2 }],
-//             },
-//           },
-//         })
-//         await sleep(100)
-//       } catch (error) {
-//         console.error('❌ Lỗi khi lưu thẻ:', error)
-//       }
-//     }
-//   }, 0)
-
-//   return [] // Trả về nhanh để client không phải đợi
-// }
 
 
 export const updateAnkiCardPoint: MutationResolvers['updateAnkiCardPoint'] = async ({ id, pointChange }) => {
