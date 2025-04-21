@@ -272,7 +272,7 @@ const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
     }
 
     setIsUploading(true);
-    const batchSize = 20;
+    const batchSize = 50;
     const batches = chunkArray(parsedCards, batchSize);
 
     try {
