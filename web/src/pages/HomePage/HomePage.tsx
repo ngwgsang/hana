@@ -265,6 +265,10 @@ const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
   //   }
   // };
 
+  const [progressPercent, setProgressPercent] = useState(0)
+  const [currentBatchIndex, setCurrentBatchIndex] = useState(0)
+  const [isPaused, setIsPaused] = useState(false)
+
 
   const handleUploadCSV = async () => {
     if (parsedCards.length === 0) {
@@ -277,6 +281,7 @@ const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
     let totalAdded = 0
 
     setIsUploading(true)
+    setIsPaused(false)
 
     const uploadBatch = async (batch, index) => {
       try {
@@ -290,23 +295,31 @@ const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
         })
 
         totalAdded += response.data?.bulkCreateAnkiCards?.count || 0
+        setProgressPercent(Math.round(((index + 1) / batches.length) * 100))
         console.log(`✅ Đã thêm batch ${index + 1}/${batches.length}`)
 
       } catch (error) {
         console.error(`❌ Lỗi ở batch ${index + 1}:`, error)
+        setIsPaused(true)         // Đánh dấu đang pause
+        setIsUploading(false)
+        setCurrentBatchIndex(index) // Lưu lại index để tiếp tục
+        return false // để dừng vòng lặp
       }
+      return true
     }
 
-    // Gửi từng batch tuần tự bằng các request độc lập
-    for (let i = 0; i < batches.length; i++) {
-      await uploadBatch(batches[i], i)
+    for (let i = currentBatchIndex; i < batches.length; i++) {
+      const success = await uploadBatch(batches[i], i)
+      if (!success) return // Dừng upload nếu gặp lỗi
     }
 
     alert(`🎉 Đã thêm tổng cộng ${totalAdded} thẻ.`)
     setParsedCards([])
     setIsUploading(false)
-    setIsPopupOpen(false)
+    setProgressPercent(0)
+    setCurrentBatchIndex(0)
   }
+
 
 
   const handleExportCSV = () => {
@@ -567,6 +580,15 @@ const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
               >
                 <LoadingAnimation state={isUploading} texts={['Đang cập nhập...', 'Xác nhận thêm thẻ']}/>
               </button>
+              {isPaused && (
+                <button
+                  onClick={handleUploadCSV}
+                  className="mt-2 px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+                >
+                  ▶️ Tiếp tục upload từ batch {currentBatchIndex + 1}
+                </button>
+              )}
+
             </div>
           ) : editingCard && (
             <div className="flex flex-col gap-4">
