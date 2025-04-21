@@ -42,11 +42,10 @@ const HomePage = () => {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const tagFromURL = searchParams.get('tag'); // Lấy giá trị tag từ URL
-
+  const [selectedBulkTagId, setSelectedBulkTagId] = useState(1)
 
 
 const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
-
 
   const global = useGlobal();
   useEffect(() => {
@@ -240,14 +239,19 @@ const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
     const formattedCards = parsedCards.map((card) => ({
       front: card.front,
       back: card.back,
-      tagIds: [2], // Gán mặc định tag ID = 1
-      point: -3, // 🔥 Đảm bảo thẻ từ CSV cũng có point = -3
+      // tagIds: [2], // Gán mặc định tag ID = 1
+      // point: -3, // 🔥 Đảm bảo thẻ từ CSV cũng có point = -3
     }));
 
     try {
-      await createAnkiCards({
-        variables: { input: formattedCards },
-      });
+      createAnkiCards({
+        variables: {
+          input: {
+            cards: parsedCards, // dạng [{ front, back }]
+            tagId: selectedBulkTagId,
+          },
+        },
+      })
       alert('Đã thêm thẻ thành công!');
       setIsPopupOpen(false);
       setParsedCards([]); // Reset danh sách
@@ -488,6 +492,17 @@ const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
               {parsedCards.length > 0 && (
                 <>
                   <p className="text-sm text-gray-500">{parsedCards.length} thẻ sẽ được thêm</p>
+                  <select
+                      value={selectedBulkTagId}
+                      onChange={(e) => setSelectedBulkTagId(Number(e.target.value))}
+                      className="p-2 rounded bg-slate-800 text-white border"
+                    >
+                      <option disabled value="">-- Chọn tag cho tất cả thẻ --</option>
+                      {tags.map(tag => (
+                        <option key={tag.id} value={tag.id}>{tag.name}</option>
+                      ))}
+                    </select>
+
                   <div className='flex gap-1 flex-wrap'>
                     {parsedCards.map( (e, index) => (
                       <ExternalUrl href={`https://mazii.net/vi-VN/search/word/javi/${e.front}`} key={index} className="text-white border-2 border-gray-600 px-2 py-1 rounded-md hover:bg-blue-500/10 hover:border-blue-500 cursor-pointer">

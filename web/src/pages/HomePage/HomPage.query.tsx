@@ -81,7 +81,7 @@ const DELETE_ANKI_CARD = gql`
 //   }
 // `
 const BULK_CREATE_ANKI_CARDS = gql`
-  mutation BulkCreateAnkiCards($input: [CreateAnkiCardInput!]!) {
+  mutation BulkCreateAnkiCards($input: BulkCreateAnkiCardsInput!) {
     bulkCreateAnkiCards(input: $input) {
       count
     }

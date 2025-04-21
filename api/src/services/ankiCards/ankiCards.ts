@@ -94,9 +94,25 @@ export const deleteAnkiCard: MutationResolvers['deleteAnkiCard'] = async ({ id }
 //     })
 //   )
 // }
+// export const bulkCreateAnkiCards: MutationResolvers['bulkCreateAnkiCards'] = async ({ input }) => {
+//   const result = await db.ankiCard.createMany({
+//     data: input.map((card) => ({
+//       front: card.front,
+//       back: card.back,
+//       enrollAt: new Date(),
+//       point: -3,
+//     })),
+//     skipDuplicates: true,
+//   })
+
+//   return { count: result.count } // <-- update schema để trả về số lượng
+// }
+// ✅ Thêm nhiều thẻ từ CSV + truyền tagId từ client
 export const bulkCreateAnkiCards: MutationResolvers['bulkCreateAnkiCards'] = async ({ input }) => {
-  const result = await db.ankiCard.createMany({
-    data: input.map((card) => ({
+  const { cards, tagId } = input
+
+  const created = await db.ankiCard.createMany({
+    data: cards.map((card) => ({
       front: card.front,
       back: card.back,
       enrollAt: new Date(),
@@ -105,9 +121,25 @@ export const bulkCreateAnkiCards: MutationResolvers['bulkCreateAnkiCards'] = asy
     skipDuplicates: true,
   })
 
-  return { count: result.count } // <-- update schema để trả về số lượng
-}
+  const fronts = cards.map((c) => c.front)
+  const createdCards = await db.ankiCard.findMany({
+    where: { front: { in: fronts } },
+    select: { id: true },
+  })
 
+  await db.$transaction(
+    createdCards.map((card) =>
+      db.ankiCard.update({
+        where: { id: card.id },
+        data: {
+          tags: { connect: [{ id: tagId }] },
+        },
+      })
+    )
+  )
+
+  return { count: created.count }
+}
 
 
 export const updateAnkiCardPoint: MutationResolvers['updateAnkiCardPoint'] = async ({ id, pointChange }) => {
