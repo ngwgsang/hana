@@ -265,22 +265,22 @@ const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
   //   }
   // };
 
+
   const handleUploadCSV = async () => {
     if (parsedCards.length === 0) {
       alert('Không có dữ liệu để thêm!');
       return;
     }
 
-    setIsUploading(true)
     const batchSize = 10
     const batches = chunkArray(parsedCards, batchSize)
-    let successCount = 0
+    let totalAdded = 0
 
-    for (let i = 0; i < batches.length; i++) {
-      const batch = batches[i]
+    setIsUploading(true)
 
+    const uploadBatch = async (batch, index) => {
       try {
-        await createAnkiCards({
+        const response = await createAnkiCards({
           variables: {
             input: {
               cards: batch,
@@ -288,23 +288,25 @@ const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
             },
           },
         })
-        successCount += batch.length
 
-        // ✅ Cập nhật UI tiến độ sau mỗi batch
-        console.log(`✅ Batch ${i + 1}/${batches.length} đã thêm xong (${successCount}/${parsedCards.length})`)
-      } catch (err) {
-        console.error(`❌ Lỗi ở batch ${i + 1}:`, err)
-        alert(`Đã xảy ra lỗi ở batch ${i + 1}. Quá trình dừng lại.`)
-        break
+        totalAdded += response.data?.bulkCreateAnkiCards?.count || 0
+        console.log(`✅ Đã thêm batch ${index + 1}/${batches.length}`)
+
+      } catch (error) {
+        console.error(`❌ Lỗi ở batch ${index + 1}:`, error)
       }
     }
 
-    setIsUploading(false)
-    setParsedCards([])
-    setIsPopupOpen(false)
-    alert(`✅ Đã thêm ${successCount} thẻ.`)
-  }
+    // Gửi từng batch tuần tự bằng các request độc lập
+    for (let i = 0; i < batches.length; i++) {
+      await uploadBatch(batches[i], i)
+    }
 
+    alert(`🎉 Đã thêm tổng cộng ${totalAdded} thẻ.`)
+    setParsedCards([])
+    setIsUploading(false)
+    setIsPopupOpen(false)
+  }
 
 
   const handleExportCSV = () => {
