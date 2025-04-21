@@ -228,40 +228,82 @@ const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
     })
   }
 
+  const chunkArray = (array, size) => {
+    const result = []
+    for (let i = 0; i < array.length; i += size) {
+      result.push(array.slice(i, i + size))
+    }
+    return result
+  }
+
+
   // Gửi dữ liệu lên server để thêm vào database
+  // const handleUploadCSV = async () => {
+  //   if (parsedCards.length === 0) {
+  //     alert('Không có dữ liệu để thêm!');
+  //     return;
+  //   }
+  //   setIsUploading(true); // Bật trạng thái loading
+
+  //   try {
+  //     // alert(selectedBulkTagId)
+  //     createAnkiCards({
+  //       variables: {
+  //         input: {
+  //           cards: parsedCards,
+  //           tagId: selectedBulkTagId,
+  //         },
+  //       },
+  //     })
+  //     alert('Đã thêm thẻ thành công!');
+  //     setIsPopupOpen(false);
+  //     setParsedCards([]); // Reset danh sách
+  //   } catch (error) {
+  //     console.error('Lỗi khi thêm thẻ:', error);
+  //   } finally {
+  //     setIsUploading(false); // Tắt trạng thái loading
+  //   }
+  // };
+
   const handleUploadCSV = async () => {
     if (parsedCards.length === 0) {
       alert('Không có dữ liệu để thêm!');
       return;
     }
-    setIsUploading(true); // Bật trạng thái loading
 
-    const formattedCards = parsedCards.map((card) => ({
-      front: card.front,
-      back: card.back,
-      // tagIds: [2], // Gán mặc định tag ID = 1
-      // point: -3, // 🔥 Đảm bảo thẻ từ CSV cũng có point = -3
-    }));
+    setIsUploading(true);
+    const batchSize = 20;
+    const batches = chunkArray(parsedCards, batchSize);
 
     try {
-      alert(selectedBulkTagId)
-      createAnkiCards({
-        variables: {
-          input: {
-            cards: parsedCards,
-            tagId: selectedBulkTagId,
-          },
-        },
-      })
-      alert('Đã thêm thẻ thành công!');
+      const results = await Promise.allSettled(
+        batches.map(batch =>
+          createAnkiCards({
+            variables: {
+              input: {
+                cards: batch,
+                tagId: selectedBulkTagId,
+              },
+            },
+          })
+        )
+      );
+
+      const failed = results.filter(r => r.status === 'rejected');
+      if (failed.length > 0) {
+        console.warn(`Có ${failed.length} batch lỗi!`);
+      }
+
+      alert('Đã thêm xong tất cả batch!');
       setIsPopupOpen(false);
-      setParsedCards([]); // Reset danh sách
+      setParsedCards([]);
     } catch (error) {
-      console.error('Lỗi khi thêm thẻ:', error);
+      console.error('Lỗi khi thêm batch:', error);
     } finally {
-      setIsUploading(false); // Tắt trạng thái loading
+      setIsUploading(false);
     }
-  };
+  }
+
 
   const handleExportCSV = () => {
     if (cards.length === 0) {
