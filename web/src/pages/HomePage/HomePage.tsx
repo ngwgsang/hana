@@ -244,10 +244,11 @@ const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
     }));
 
     try {
+      alert(selectedBulkTagId)
       createAnkiCards({
         variables: {
           input: {
-            cards: parsedCards, // dạng [{ front, back }]
+            cards: parsedCards,
             tagId: selectedBulkTagId,
           },
         },
