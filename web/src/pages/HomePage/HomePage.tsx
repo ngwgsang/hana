@@ -6,7 +6,7 @@ import Popup from 'src/components/Popup'
 import PingDot from 'src/components/PingDot'
 import ExternalUrl from 'src/components/ExternalUrl'
 import LoadingAnimation from 'src/components/LoadingAnimation'
-import { BoltIcon, FunnelIcon, MagnifyingGlassIcon, PlusIcon, PencilSquareIcon, CloudArrowDownIcon, Squares2X2Icon } from '@heroicons/react/24/solid'
+import { BoltIcon, FunnelIcon, MagnifyingGlassIcon, PlusIcon, PencilSquareIcon, CloudArrowDownIcon, Squares2X2Icon, BookmarkIcon } from '@heroicons/react/24/solid'
 import Papa from 'papaparse'
 import {
   BULK_CREATE_ANKI_CARDS,
@@ -345,6 +345,54 @@ const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
       .replace(/\*\*(.*?)\*\*/g, "<b class='group-hover:bg-sky-500/30 rounded-sm'>$1</b>"); // Chuyển ****text**** thành <b>text</b>
   };
 
+  const handleBookmark = (card) => {
+    const key = 'hana-short-term-memory'
+    const stored = JSON.parse(localStorage.getItem(key) || '[]')
+
+    // Tránh trùng lặp
+    if (!stored.includes(card.front)) {
+      stored.push(card.front)
+      localStorage.setItem(key, JSON.stringify(stored))
+    }
+  }
+
+
+  const [showBookmarks, setShowBookmarks] = useState(false)
+  const [bookmarkedCards, setBookmarkedCards] = useState([])
+  const cardRefs = useRef({}) // Map front -> ref
+
+  const loadBookmarkedCards = () => {
+    const stored = localStorage.getItem('hana-short-term-memory')
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored)
+        setBookmarkedCards(parsed)
+      } catch (e) {
+        console.error('Lỗi đọc bookmark:', e)
+      }
+    }
+  }
+
+  const handleRemoveBookmark = (frontToRemove) => {
+    const key = 'hana-short-term-memory'
+    const stored = JSON.parse(localStorage.getItem(key) || '[]')
+    const updated = stored.filter((item) => item !== frontToRemove)
+    localStorage.setItem(key, JSON.stringify(updated))
+    setBookmarkedCards(updated)
+  }
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.ctrlKey && e.key === 'z') {
+        e.preventDefault()
+        loadBookmarkedCards()
+        setShowBookmarks((prev) => !prev)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   return (
     <main className="p-4 mx-auto my-0 w-full sm:w-[85%] md:w-[75%] lg:w-[50%]">
@@ -393,9 +441,54 @@ const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
       <LoadingAnimation state={loading} texts={['Đang tải dữ liệu...', '']} />
       {error && <p className="text-red-500">Lỗi: {error.message}</p>}
 
+      {/* Short term memory */}
+      {showBookmarks && (
+  <div className="fixed bottom-20 right-4 z-50 bg-slate-800 p-4 rounded shadow-lg max-h-[60vh] overflow-y-auto w-[90%] md:w-[400px] border border-blue-500">
+    <h3 className="text-lg font-bold text-white mb-2">📌 Thẻ đã ghim</h3>
+    {bookmarkedCards.length > 0 ? (
+      <ul className="space-y-2">
+        {bookmarkedCards.map((front, index) => (
+          <li
+            key={index}
+            className="flex justify-between items-center bg-slate-700 p-2 rounded text-white group hover:bg-blue-600"
+          >
+            <span
+              className="cursor-pointer group-hover:underline"
+              onClick={() => {
+                const target = cardRefs.current[front]
+                if (target) {
+                  target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                }
+              }}
+            >
+              {front}
+            </span>
+
+            <button
+              className="text-red-400 hover:text-red-600 text-sm ml-4"
+              onClick={() => handleRemoveBookmark(front)}
+            >
+              ❌
+            </button>
+          </li>
+        ))}
+      </ul>
+
+    ) : (
+      <p className="text-slate-400">Chưa có thẻ nào được lưu.</p>
+    )}
+  </div>
+)}
+
+
+
+
       <div className="grid grid-cols-1 gap-4 ">
         {cards.map((card, index) => (
           <div
+            ref={(el) => {
+              if (el) cardRefs.current[card.front] = el
+            }}
             key={card.id}
             className={`p-4 bg-slate-700 rounded shadow relative group transition duration-300
               hover:ring-2 hover:shadow-lg hover:shadow-blue-500/50 hover:bg-slate-800
@@ -442,17 +535,24 @@ const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
               <button onClick={() => handlePointUpdate(card.id, 1)} className="bg-gray-500 text-xl w-10 h-10 rounded hover:bg-gray-700">😎</button>
             </div>
 
-            {/* Nút chỉnh sửa (ẩn mặc định, hiển thị khi hover) */}
-            <button
-              onClick={() => handleEdit(card)}
-              className="absolute top-2 right-2 p-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-            >
-              <PencilSquareIcon className="h-6 w-6 text-gray-400 hover:text-gray-600" />
-            </button>
+
+            <div className='absolute top-2 right-2 flex gap-1'>
+              <button
+                onClick={() => handleEdit(card)}
+                className="rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+              >
+                <PencilSquareIcon className="h-6 w-6 text-gray-400 hover:text-gray-600" />
+              </button>
+              <button
+                onClick={() => handleBookmark(card)}
+                className="rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+              >
+                <BookmarkIcon className="h-6 w-6 text-gray-400 hover:text-gray-600" />
+              </button>
+            </div>
           </div>
         ))}
       </div>
-
 
       {/* Popup chỉnh sửa/thêm thẻ */}
       <Popup  title={isAdding ? 'Thêm thẻ mới' : 'Chỉnh sửa thẻ'} isOpen={isPopupOpen} onClose={handleClosePopup}>

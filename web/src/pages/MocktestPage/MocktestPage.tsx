@@ -29,7 +29,7 @@ const MocktestPage = () => {
   const [questions, setQuestions] = useState([]);
   const [selectedAnswers, setSelectedAnswers] = useState({});
   const [isLoading, setIsLoading] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [submitted, setSubmitted] = useState(true);
   const [randomWords, setRandomWords] = useState([]);
   const [idx, setIdx] = useState([]);
   const [isPopupOpen, setIsOpen] = useState(false)
