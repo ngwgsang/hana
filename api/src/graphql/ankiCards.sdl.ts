@@ -41,7 +41,7 @@ export const schema = gql`
 
   input BulkCreateAnkiCardsInput {
   cards: [CreateAnkiCardInput!]!
-  tagId: Int!
+  tagIds: [Int!]!
 }
 
   type Mutation {

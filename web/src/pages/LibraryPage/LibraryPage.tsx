@@ -10,8 +10,6 @@ import { AcademicCapIcon, FireIcon } from '@heroicons/react/24/solid'
 
 const LibraryPage = () => {
 
-
-
   const [apiResponse, setApiResponse] = useState({
     think: "Chưa suy nghĩ",
     knowledge: "99",
@@ -48,141 +46,10 @@ const LibraryPage = () => {
     }
   }, [])
 
-  const together = new Together({ apiKey: process.env.REDWOOD_ENV_TOGETHER_AI });
-
-  const calculatePerformance = async () => {
-
-    setActiveTab('performance')
-    setIsCalcPerformance(true);
-    setIsLoading(true);
-
-    try {
-      const vocab = cards.map(card => card.front);
-      const tagsFormatted = tags.map(tag => ({
-        tag: tag.name,
-        count: tagCardCount[tag.id] || 0
-      }));
-
-      const messageContent = `
-        Dưới đây là dữ liệu về quá trình học của tôi với các bộ thẻ Anki.
-        Tôi thi N2 được 100/180 điểm và đang ôn luyện N1.
-        TARGET-LEVEL: Để đỗ N1 cần 10,000 từ vựng, 2,000 chữ Hán và 1,000 cấu trúc ngữ pháp.
-
-        Cards: ${vocab.join(', ')}
-        Tags: ${JSON.stringify(tagsFormatted)}
-
-        TASK: Hãy đánh giá năng lực học tập của tôi và trả kết quả theo format:
-        <knowledge>{int}</knowledge>
-        <performance>{int}</performance>
-        <pass_n1_rate>{int}</pass_n1_rate>
-        <think>{string}</think>
-      `;
-
-      const response = await together.chat.completions.create({
-        model: process.env.REDWOOD_ENV_REASONING_MODEL,
-        messages: [{ role: "user", content: messageContent }]
-      });
-
-      const textResponse = response.choices[0].message.content;
-
-      const extractData = (label, text) => {
-        const match = text.match(new RegExp(`<${label}>(.*?)</${label}>`, "s"));
-        return match ? match[1].trim() : "N/A";
-      };
-
-      setApiResponse({
-        knowledge: extractData("knowledge", textResponse),
-        performance: extractData("performance", textResponse),
-        pass_n1_rate: extractData("pass_n1_rate", textResponse),
-        think: extractData("think", textResponse),
-      });
-
-    } catch (error) {
-      console.error("Error calling Together AI:", error);
-      alert("Lỗi khi gọi API Together AI");
-    }
-
-    setIsLoading(false);
-  };
-
-
-  // Function to generate a random question
-  const generateRandomQuestion = async () => {
-
-    setActiveTab('quiz')
-
-    if (cards.length === 0) {
-      alert("Không có thẻ nào để tạo câu hỏi!");
-      return;
-    }
-
-    setIsGeneratingQuestion(true);
-    setSelectedAnswer(null);
-    setExplanation(null);
-
-    const randomCard = cards[Math.floor(Math.random() * cards.length)];
-
-    try {
-      const questionPrompt = `
-        Hãy tạo một câu hỏi trắc nghiệm dựa trên từ vựng sau:
-        Từ: "${randomCard.front}"
-        Nghĩa: "${randomCard.back}"
-        Các thể loại câu hỏi được tôi cho phép:
-        - Cách đọc Kanji
-        - Nghĩa của từ
-        - Lựa chọn từ đồng nghĩa, trái nghĩa
-
-        Hãy trả về câu hỏi theo format sau:
-        <question>{string}</question>
-        <optionA>{string}</optionA>
-        <optionB>{string}</optionB>
-        <optionC>{string}</optionC>
-        <optionD>{string}</optionD>
-        <correct>{char}</correct> (A, B, C, hoặc D)
-        <explanation>{string}</explanation> (Giải thích vì sao đáp án đúng)
-
-        # Lưu ý:
-        Câu hỏi , đáp án là tiếng Nhật
-        Giải thích là tiếng Việt
-        `;
-
-      const response = await together.chat.completions.create({
-        model: process.env.REDWOOD_ENV_REASONING_MODEL,
-        messages: [{ role: "user", content: questionPrompt }]
-      });
-
-      const textResponse = response.choices[0].message.content;
-
-      const extractData = (label) => {
-        const match = textResponse.match(new RegExp(`<${label}>(.*?)</${label}>`, "s"));
-        return match ? match[1].trim() : "N/A";
-      };
-
-      setQuestion({
-        text: extractData("question"),
-        options: {
-          A: extractData("optionA"),
-          B: extractData("optionB"),
-          C: extractData("optionC"),
-          D: extractData("optionD"),
-        },
-        correct: extractData("correct"),
-        explanation: extractData("explanation"),
-      });
-
-    } catch (error) {
-      console.error("Error generating question:", error);
-      alert("Lỗi khi tạo câu hỏi!");
-    }
-
-    setIsGeneratingQuestion(false);
-  };
-
   const handleAnswerSelection = (option) => {
     setSelectedAnswer(option);
     setExplanation(question.explanation);
   };
-
 
   const baseColors = [
     'bg-red-500 hover:bg-red-400',
@@ -198,7 +65,6 @@ const LibraryPage = () => {
   ];
 
   const repeatedColors = Array.from({ length: tags.length }, (_, i) => baseColors[i % baseColors.length]);
-
   const VOCAB_GOAL = 10000;
   const GRAMMAR_GOAL = 250;
   const VOCAB_PROCESS = Math.round(( tagCardCount[1] + tagCardCount[2] ) * 10000 / VOCAB_GOAL ) / 100
@@ -231,20 +97,7 @@ const LibraryPage = () => {
         <h2 className="my-4 text-white font-semibold text-2xl ">Tính năng 💫</h2>
 
         <div className='grid grid-cols-1 gap-1'>
-          {/* <button
-            type="button"
-            onClick={calculatePerformance}
-            className="text-white px-4 py-2 rounded-md border-2 border-blue-700"
-          >
-            {isCalcPerformance ? "Đánh giá lại 🤖" : "Đánh giá năng lực 🤖"}
-          </button>
-          <button
-            type="button"
-            onClick={generateRandomQuestion}
-            className="text-white px-4 py-2 rounded-md border-2 border-blue-700 "
-          >
-            {isGeneratingQuestion && activeTab == "quiz" ? "Đang tạo câu hỏi..." : "Tạo câu hỏi ngẫu nhiên 🎲"}
-          </button> */}
+
           <div className='mt-4 mb-2 grid grid-cols-3 gap-2 w-full'>
             <div className="relative flex items-center justify-center px-4 py-12 rounded-md bg-violet-500/10 border-violet-600 border-4 text-white text-2xl font-semibold">
               <span className='absolute top-1 left-1 text-sm px-2 py-1'>Tỉ lệ Pass</span>

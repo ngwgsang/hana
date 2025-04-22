@@ -23,4 +23,11 @@ WHERE
   AND a.front = b.front
   AND a.back = b.back;
 
+-- Chỉnh tag
+UPDATE "_AnkiCardToAnkiTag" AS act
+SET "B" = 3
+FROM "AnkiCard" AS ac
+WHERE act."A" = ac."id"
+  AND act."B" = 2
+  AND ac."front" LIKE '%～%';
 ```

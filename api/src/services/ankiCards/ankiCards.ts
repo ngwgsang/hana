@@ -108,8 +108,35 @@ export const deleteAnkiCard: MutationResolvers['deleteAnkiCard'] = async ({ id }
 //   return { count: result.count } // <-- update schema để trả về số lượng
 // }
 // ✅ Thêm nhiều thẻ từ CSV + truyền tagId từ client
+// export const bulkCreateAnkiCards: MutationResolvers['bulkCreateAnkiCards'] = async ({ input }) => {
+//   const { cards, tagId } = input
+
+//   const created = await db.ankiCard.createMany({
+//     data: cards.map((card) => ({
+//       front: card.front,
+//       back: card.back,
+//       enrollAt: new Date(),
+//       point: -3,
+//     })),
+//     skipDuplicates: true,
+//   })
+
+//   const fronts = cards.map((c) => c.front)
+//   const createdCards = await db.ankiCard.findMany({
+//     where: { front: { in: fronts } },
+//     select: { id: true },
+//   })
+
+//   // Sử dụng SQL trực tiếp thay cho việc cập nhập gián tiếp
+//   const values = createdCards.map((card) => `(${card.id}, ${tagId})`).join(', ')
+//   await db.$executeRawUnsafe(
+//     `INSERT INTO "_AnkiCardToAnkiTag" ("A", "B") VALUES ${values} ON CONFLICT DO NOTHING`
+//   )
+
+//   return { count: created.count }
+// }
 export const bulkCreateAnkiCards: MutationResolvers['bulkCreateAnkiCards'] = async ({ input }) => {
-  const { cards, tagId } = input
+  const { cards, tagIds } = input
 
   const created = await db.ankiCard.createMany({
     data: cards.map((card) => ({
@@ -124,22 +151,27 @@ export const bulkCreateAnkiCards: MutationResolvers['bulkCreateAnkiCards'] = asy
   const fronts = cards.map((c) => c.front)
   const createdCards = await db.ankiCard.findMany({
     where: { front: { in: fronts } },
-    select: { id: true },
+    select: { id: true, front: true },
   })
 
-  await db.$transaction(
-    createdCards.map((card) =>
-      db.ankiCard.update({
-        where: { id: card.id },
-        data: {
-          tags: { connect: [{ id: tagId }] },
-        },
-      })
-    )
-  )
+  const relations = []
+  for (const createdCard of createdCards) {
+    for (const tagId of tagIds) {
+      relations.push(`(${createdCard.id}, ${tagId})`)
+    }
+  }
+
+  if (relations.length > 0) {
+    await db.$executeRawUnsafe(`
+      INSERT INTO "_AnkiCardToAnkiTag" ("A", "B")
+      VALUES ${relations.join(', ')}
+      ON CONFLICT DO NOTHING
+    `)
+  }
 
   return { count: created.count }
 }
+
 
 
 export const updateAnkiCardPoint: MutationResolvers['updateAnkiCardPoint'] = async ({ id, pointChange }) => {

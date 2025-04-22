@@ -42,7 +42,8 @@ const HomePage = () => {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const tagFromURL = searchParams.get('tag'); // Lấy giá trị tag từ URL
-  const [selectedBulkTagId, setSelectedBulkTagId] = useState(1)
+  // const [selectedBulkTagId, setSelectedBulkTagId] = useState(1)
+  const [selectedBulkTagIds, setSelectedBulkTagIds] = useState([])
 
 
 const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
@@ -154,7 +155,6 @@ const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
     handleClosePopup();
   };
 
-
   // Xóa thẻ
   const handleDelete = async () => {
     if (confirm('Bạn có chắc chắn muốn xóa thẻ này?')) {
@@ -228,99 +228,32 @@ const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
     })
   }
 
-  const chunkArray = (array, size) => {
-    const result = []
-    for (let i = 0; i < array.length; i += size) {
-      result.push(array.slice(i, i + size))
-    }
-    return result
-  }
-
-
   // Gửi dữ liệu lên server để thêm vào database
-  // const handleUploadCSV = async () => {
-  //   if (parsedCards.length === 0) {
-  //     alert('Không có dữ liệu để thêm!');
-  //     return;
-  //   }
-  //   setIsUploading(true); // Bật trạng thái loading
-
-  //   try {
-  //     // alert(selectedBulkTagId)
-  //     createAnkiCards({
-  //       variables: {
-  //         input: {
-  //           cards: parsedCards,
-  //           tagId: selectedBulkTagId,
-  //         },
-  //       },
-  //     })
-  //     alert('Đã thêm thẻ thành công!');
-  //     setIsPopupOpen(false);
-  //     setParsedCards([]); // Reset danh sách
-  //   } catch (error) {
-  //     console.error('Lỗi khi thêm thẻ:', error);
-  //   } finally {
-  //     setIsUploading(false); // Tắt trạng thái loading
-  //   }
-  // };
-
-  const [progressPercent, setProgressPercent] = useState(0)
-  const [currentBatchIndex, setCurrentBatchIndex] = useState(0)
-  const [isPaused, setIsPaused] = useState(false)
-
-
   const handleUploadCSV = async () => {
     if (parsedCards.length === 0) {
       alert('Không có dữ liệu để thêm!');
       return;
     }
+    setIsUploading(true); // Bật trạng thái loading
 
-    const batchSize = 10
-    const batches = chunkArray(parsedCards, batchSize)
-    let totalAdded = 0
-
-    setIsUploading(true)
-    setIsPaused(false)
-
-    const uploadBatch = async (batch, index) => {
-      try {
-        const response = await createAnkiCards({
-          variables: {
-            input: {
-              cards: batch,
-              tagId: selectedBulkTagId,
-            },
+    try {
+      const response = await createAnkiCards({
+        variables: {
+          input: {
+            cards: parsedCards,
+            tagIds: selectedBulkTagIds,
           },
-        })
-
-        totalAdded += response.data?.bulkCreateAnkiCards?.count || 0
-        setProgressPercent(Math.round(((index + 1) / batches.length) * 100))
-        console.log(`✅ Đã thêm batch ${index + 1}/${batches.length}`)
-
-      } catch (error) {
-        console.error(`❌ Lỗi ở batch ${index + 1}:`, error)
-        setIsPaused(true)         // Đánh dấu đang pause
-        setIsUploading(false)
-        setCurrentBatchIndex(index) // Lưu lại index để tiếp tục
-        return false // để dừng vòng lặp
-      }
-      return true
+        },
+      })
+      alert(`Đã thêm thẻ thành công ${response.data?.bulkCreateAnkiCards?.count || 0} thẻ!`);
+      setIsPopupOpen(false);
+      setParsedCards([]); // Reset danh sách
+    } catch (error) {
+      console.error('Lỗi khi thêm thẻ:', error);
+    } finally {
+      setIsUploading(false); // Tắt trạng thái loading
     }
-
-    for (let i = currentBatchIndex; i < batches.length; i++) {
-      const success = await uploadBatch(batches[i], i)
-      if (!success) return // Dừng upload nếu gặp lỗi
-    }
-
-    alert(`🎉 Đã thêm tổng cộng ${totalAdded} thẻ.`)
-    setParsedCards([])
-    setIsUploading(false)
-    setProgressPercent(0)
-    setCurrentBatchIndex(0)
-  }
-
-
+  };
 
   const handleExportCSV = () => {
     if (cards.length === 0) {
@@ -460,7 +393,7 @@ const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
       <LoadingAnimation state={loading} texts={['Đang tải dữ liệu...', '']} />
       {error && <p className="text-red-500">Lỗi: {error.message}</p>}
 
-      <div className="grid grid-cols-1 gap-4">
+      <div className="grid grid-cols-1 gap-4 ">
         {cards.map((card, index) => (
           <div
             key={card.id}
@@ -552,18 +485,26 @@ const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
               {parsedCards.length > 0 && (
                 <>
                   <p className="text-sm text-gray-500">{parsedCards.length} thẻ sẽ được thêm</p>
-                  <select
-                      value={selectedBulkTagId}
-                      onChange={(e) => setSelectedBulkTagId(Number(e.target.value))}
-                      className="p-2 rounded bg-slate-800 text-white border"
-                    >
-                      <option disabled value="">-- Chọn tag cho tất cả thẻ --</option>
-                      {tags.map(tag => (
-                        <option key={tag.id} value={tag.id}>{tag.name}</option>
-                      ))}
-                    </select>
+                  <div className="grid grid-cols-2 gap-2 p-4 rounded-md border-2 border-blue-500 bg-blue-500/10">
+                    {tags.map((tag) => (
+                      <label key={tag.id} className="flex items-center gap-2 text-slate-200">
+                        <input
+                          type="checkbox"
+                          checked={selectedBulkTagIds.includes(tag.id)}
+                          onChange={() => {
+                            setSelectedBulkTagIds((prev) =>
+                              prev.includes(tag.id)
+                                ? prev.filter((id) => id !== tag.id)
+                                : [...prev, tag.id]
+                            )
+                          }}
+                        />
+                        {tag.name}
+                      </label>
+                    ))}
+                  </div>
 
-                  <div className='flex gap-1 flex-wrap'>
+                  <div className='flex gap-1 flex-wrap overflow-y-scroll max-h-[36vh]'>
                     {parsedCards.map( (e, index) => (
                       <ExternalUrl href={`https://mazii.net/vi-VN/search/word/javi/${e.front}`} key={index} className="text-white border-2 border-gray-600 px-2 py-1 rounded-md hover:bg-blue-500/10 hover:border-blue-500 cursor-pointer">
                       {e.front}
@@ -580,14 +521,6 @@ const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
               >
                 <LoadingAnimation state={isUploading} texts={['Đang cập nhập...', 'Xác nhận thêm thẻ']}/>
               </button>
-              {isPaused && (
-                <button
-                  onClick={handleUploadCSV}
-                  className="mt-2 px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600"
-                >
-                  ▶️ Tiếp tục upload từ batch {currentBatchIndex + 1}
-                </button>
-              )}
 
             </div>
           ) : editingCard && (
