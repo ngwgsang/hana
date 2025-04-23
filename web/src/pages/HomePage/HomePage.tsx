@@ -354,8 +354,12 @@ const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
       stored.push(card.front)
       localStorage.setItem(key, JSON.stringify(stored))
     }
-  }
 
+    if (showBookmarks) {
+      loadBookmarkedCards()
+      setShowBookmarks(true)
+    }
+  }
 
   const [showBookmarks, setShowBookmarks] = useState(false)
   const [bookmarkedCards, setBookmarkedCards] = useState([])
@@ -393,6 +397,18 @@ const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
+
+
+  const [highlightedCardId, setHighlightedCardId] = useState(null)
+
+  const handleBookmarkClick = (front) => {
+    const el = document.getElementById(`card-${front}`)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      el.classList.add('border-red-500') // Optional immediate feedback
+      setHighlightedCardId(front) // Ghi lại để style bằng tailwind
+    }
+  }
 
   return (
     <main className="p-4 mx-auto my-0 w-full sm:w-[85%] md:w-[75%] lg:w-[50%]">
@@ -443,312 +459,316 @@ const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
 
       {/* Short term memory */}
       {showBookmarks && (
-  <div className="fixed bottom-20 right-4 z-50 bg-slate-800 p-4 rounded shadow-lg max-h-[60vh] overflow-y-auto w-[90%] md:w-[400px] border border-blue-500">
-    <h3 className="text-lg font-bold text-white mb-2">📌 Thẻ đã ghim</h3>
-    {bookmarkedCards.length > 0 ? (
-      <ul className="space-y-2">
-        {bookmarkedCards.map((front, index) => (
-          <li
-            key={index}
-            className="flex justify-between items-center bg-slate-700 p-2 rounded text-white group hover:bg-blue-600"
-          >
-            <span
-              className="cursor-pointer group-hover:underline"
-              onClick={() => {
-                const target = cardRefs.current[front]
-                if (target) {
-                  target.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                }
-              }}
-            >
-              {front}
-            </span>
-
-            <button
-              className="text-red-400 hover:text-red-600 text-sm ml-4"
-              onClick={() => handleRemoveBookmark(front)}
-            >
-              ❌
-            </button>
-          </li>
-        ))}
-      </ul>
-
-    ) : (
-      <p className="text-slate-400">Chưa có thẻ nào được lưu.</p>
-    )}
-  </div>
-)}
-
-
-
-
-      <div className="grid grid-cols-1 gap-4 ">
-        {cards.map((card, index) => (
-          <div
-            ref={(el) => {
-              if (el) cardRefs.current[card.front] = el
-            }}
-            key={card.id}
-            className={`p-4 bg-slate-700 rounded shadow relative group transition duration-300
-              hover:ring-2 hover:shadow-lg hover:shadow-blue-500/50 hover:bg-slate-800
-              ${hiddenCards.includes(card.id) ? 'hidden' : ''}`} >
-            {/* <h2 className="text-lg font-semibold text-white">{card.front}</h2> */}
-            <ExternalUrl className="text-lg font-semibold text-white" href={`https://mazii.net/vi-VN/search/word/javi/${card.front}`}>{card.front}</ExternalUrl>
-            <span className='absolute right-2 bottom-2 rounded text-sm text-blue-500'>{getTimeElapsedText(card.createdAt)}</span>
-            { getTimeElapsedText(card.createdAt) != "" ? <PingDot className='absolute -left-1 top-1 -translate-y-1/2'></PingDot> : ""}
-            <div className="text-slate-300" dangerouslySetInnerHTML={{ __html: HandleSpecialText(card.back) }} />
-
-
-            <div className="my-2 text-sm text-blue-500">
-              {card.tags
-                .slice() // Tạo một bản sao để tránh thay đổi dữ liệu gốc
-                .sort((a, b) => a.name.localeCompare(b.name)) // Sắp xếp theo thứ tự bảng chữ cái
-                .map((tag) => `#${tag.name} `)}
-            </div>
-
-            {/* Điểm số */}
-            {
-                    card.reviewScore < 0 &&
-                      <span className="text-sm text-red-500 border bg-red-500/10 border-red-500  mt-2 py-1 px-2 rounded-md w-auto font-semibold">
-                        <span>Cần ôn</span>
-                      </span>
-            }
-            {
-                    card.reviewScore == 0 &&
-                      <span className="text-sm text-orange-500 bg-orange-500/10 border border-orange-500 mt-2 py-1 px-2 rounded-md w-auto font-semibold">
-                        <span>Sắp đến hạn</span>
-                      </span>
-            }
-            {
-                    card.reviewScore > 0 &&
-                      <span className="text-sm text-green-500 bg-green-500/10 border border-green-500 mt-2 py-1 px-2 rounded-md w-auto font-semibold">
-                        <span>Chưa đến hạn</span>
-                      </span>
-            }
-            {/* <span>{card.reviewScore} {card.enrollAt}</span> */}
-
-            {/* Nút cập nhật điểm */}
-            <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 flex gap-2 bg-gray-800 p-2 rounded-lg shadow-lg transition-opacity duration-300">
-              <button onClick={() => handlePointUpdate(card.id, -1)} className="bg-gray-500 text-xl w-10 h-10 rounded hover:bg-gray-700">😵‍💫</button>
-              <button onClick={() => handlePointUpdate(card.id, 0)} className="bg-gray-500 text-xl w-10 h-10 rounded hover:bg-gray-700">🤯</button>
-              <button onClick={() => handlePointUpdate(card.id, 1)} className="bg-gray-500 text-xl w-10 h-10 rounded hover:bg-gray-700">😎</button>
-            </div>
-
-
-            <div className='absolute top-2 right-2 flex gap-1'>
-              <button
-                onClick={() => handleEdit(card)}
-                className="rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+      <div className="fixed top-4 right-4 z-50 bg-slate-800 p-4 rounded shadow-lg max-h-[60vh] overflow-y-auto w-[90%] md:w-[22vw] border border-blue-500">
+        <h3 className="text-lg font-bold text-white mb-2">📌 Thẻ đã ghim</h3>
+        {bookmarkedCards.length > 0 ? (
+          <ul className="space-y-2">
+            {bookmarkedCards.map((front, index) => (
+              <li
+                key={index}
+                className="flex justify-between items-center bg-slate-700 p-2 rounded text-white group hover:bg-blue-600"
               >
-                <PencilSquareIcon className="h-6 w-6 text-gray-400 hover:text-gray-600" />
-              </button>
-              <button
-                onClick={() => handleBookmark(card)}
-                className="rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-              >
-                <BookmarkIcon className="h-6 w-6 text-gray-400 hover:text-gray-600" />
-              </button>
-            </div>
-          </div>
-        ))}
+                <span
+                  className="cursor-pointer group-hover:underline"
+                  onClick={() => {
+                    const target = cardRefs.current[front]
+                    if (target) {
+                      target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                    }
+                    handleBookmarkClick(target)
+                    // alert(front)
+                  }}
+                >
+                  {front}
+                </span>
+
+                <button
+                  className="text-red-400 hover:text-red-600 text-sm ml-4"
+                  onClick={() => handleRemoveBookmark(front)}
+                >
+                  ❌
+                </button>
+              </li>
+            ))}
+          </ul>
+
+        ) : (
+          <p className="text-slate-400">Chưa có thẻ nào được lưu.</p>
+        )}
       </div>
+    )}
 
-      {/* Popup chỉnh sửa/thêm thẻ */}
-      <Popup  title={isAdding ? 'Thêm thẻ mới' : 'Chỉnh sửa thẻ'} isOpen={isPopupOpen} onClose={handleClosePopup}>
 
-      <div className="flex flex-col gap-4">
-          {/* Chọn phương thức */}
-          <div className="flex gap-2">
-            <button
-              onClick={() => setIsAddingCSV(false)}
-              className={`px-4 py-2 rounded w-full ${
-                !isAddingCSV ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-700'
-              }`}
-            >
-              Thêm thủ công
-            </button>
-            <button
-              onClick={() => setIsAddingCSV(true)}
-              className={`px-4 py-2 rounded w-full ${
-                isAddingCSV ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-700'
-              }`}
-            >
-              Upload CSV
-            </button>
+
+
+          <div className="grid grid-cols-1 gap-4 ">
+            {cards.map((card, index) => (
+              <div
+                id={`card-${card.front}`}
+                ref={(el) => {
+                  if (el) cardRefs.current[card.front] = el
+                }}
+                key={card.id}
+                className={`p-4 bg-slate-700 rounded shadow relative group transition duration-300
+                  hover:ring-2 hover:shadow-lg hover:shadow-blue-500/50 hover:bg-slate-800
+                  ${highlightedCardId == card.front ? ' border-2 border-yellow-400 ' : ' '}
+                  ${hiddenCards.includes(card.id) ? 'hidden' : ''}`} >
+                {/* <h2 className="text-lg font-semibold text-white">{card.front}</h2> */}
+                <ExternalUrl className="text-lg font-semibold text-white" href={`https://mazii.net/vi-VN/search/word/javi/${card.front}`}>{card.front}</ExternalUrl>
+                <span className='absolute right-2 bottom-2 rounded text-sm text-blue-500'>{getTimeElapsedText(card.createdAt)}</span>
+                { getTimeElapsedText(card.createdAt) != "" ? <PingDot className='absolute -left-1 top-1 -translate-y-1/2'></PingDot> : ""}
+                <div className="text-slate-300" dangerouslySetInnerHTML={{ __html: HandleSpecialText(card.back) }} />
+
+
+                <div className="my-2 text-sm text-blue-500">
+                  {card.tags
+                    .slice() // Tạo một bản sao để tránh thay đổi dữ liệu gốc
+                    .sort((a, b) => a.name.localeCompare(b.name)) // Sắp xếp theo thứ tự bảng chữ cái
+                    .map((tag) => `#${tag.name} `)}
+                </div>
+
+                {/* Điểm số */}
+                {
+                        card.reviewScore < 0 &&
+                          <span className="text-sm text-red-500 border bg-red-500/10 border-red-500  mt-2 py-1 px-2 rounded-md w-auto font-semibold">
+                            <span>Cần ôn</span>
+                          </span>
+                }
+                {
+                        card.reviewScore == 0 &&
+                          <span className="text-sm text-orange-500 bg-orange-500/10 border border-orange-500 mt-2 py-1 px-2 rounded-md w-auto font-semibold">
+                            <span>Sắp đến hạn</span>
+                          </span>
+                }
+                {
+                        card.reviewScore > 0 &&
+                          <span className="text-sm text-green-500 bg-green-500/10 border border-green-500 mt-2 py-1 px-2 rounded-md w-auto font-semibold">
+                            <span>Chưa đến hạn</span>
+                          </span>
+                }
+                {/* <span>{card.reviewScore} {card.enrollAt}</span> */}
+
+                {/* Nút cập nhật điểm */}
+                <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 flex gap-2 bg-gray-800 p-2 rounded-lg shadow-lg transition-opacity duration-300">
+                  <button onClick={() => handlePointUpdate(card.id, -1)} className="bg-gray-500 text-xl w-10 h-10 rounded hover:bg-gray-700">😵‍💫</button>
+                  <button onClick={() => handlePointUpdate(card.id, 0)} className="bg-gray-500 text-xl w-10 h-10 rounded hover:bg-gray-700">🤯</button>
+                  <button onClick={() => handlePointUpdate(card.id, 1)} className="bg-gray-500 text-xl w-10 h-10 rounded hover:bg-gray-700">😎</button>
+                </div>
+
+
+                <div className='absolute top-2 right-2 flex gap-1'>
+                  <button
+                    onClick={() => handleEdit(card)}
+                    className="rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                  >
+                    <PencilSquareIcon className="h-6 w-6 text-gray-400 hover:text-gray-600" />
+                  </button>
+                  <button
+                    onClick={() => handleBookmark(card)}
+                    className="rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                  >
+                    <BookmarkIcon className="h-6 w-6 text-gray-400 hover:text-gray-600" />
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
 
-          {/* Nếu chọn thêm CSV */}
-          {isAddingCSV ? (
-            <div className="flex flex-col gap-3">
-              <input type="file" accept=".csv" onChange={handleFileUpload} className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-600 dark:border-gray-600 dark:placeholder-gray-400" />
-              {parsedCards.length > 0 && (
-                <>
-                  <p className="text-sm text-gray-500">{parsedCards.length} thẻ sẽ được thêm</p>
-                  <div className="grid grid-cols-2 gap-2 p-4 rounded-md border-2 border-blue-500 bg-blue-500/10">
+          {/* Popup chỉnh sửa/thêm thẻ */}
+          <Popup  title={isAdding ? 'Thêm thẻ mới' : 'Chỉnh sửa thẻ'} isOpen={isPopupOpen} onClose={handleClosePopup}>
+
+          <div className="flex flex-col gap-4">
+              {/* Chọn phương thức */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setIsAddingCSV(false)}
+                  className={`px-4 py-2 rounded w-full ${
+                    !isAddingCSV ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-700'
+                  }`}
+                >
+                  Thêm thủ công
+                </button>
+                <button
+                  onClick={() => setIsAddingCSV(true)}
+                  className={`px-4 py-2 rounded w-full ${
+                    isAddingCSV ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-700'
+                  }`}
+                >
+                  Upload CSV
+                </button>
+              </div>
+
+              {/* Nếu chọn thêm CSV */}
+              {isAddingCSV ? (
+                <div className="flex flex-col gap-3">
+                  <input type="file" accept=".csv" onChange={handleFileUpload} className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-600 dark:border-gray-600 dark:placeholder-gray-400" />
+                  {parsedCards.length > 0 && (
+                    <>
+                      <p className="text-sm text-gray-500">{parsedCards.length} thẻ sẽ được thêm</p>
+                      <div className="grid grid-cols-2 gap-2 p-4 rounded-md border-2 border-blue-500 bg-blue-500/10">
+                        {tags.map((tag) => (
+                          <label key={tag.id} className="flex items-center gap-2 text-slate-200">
+                            <input
+                              type="checkbox"
+                              checked={selectedBulkTagIds.includes(tag.id)}
+                              onChange={() => {
+                                setSelectedBulkTagIds((prev) =>
+                                  prev.includes(tag.id)
+                                    ? prev.filter((id) => id !== tag.id)
+                                    : [...prev, tag.id]
+                                )
+                              }}
+                            />
+                            {tag.name}
+                          </label>
+                        ))}
+                      </div>
+
+                      <div className='flex gap-1 flex-wrap overflow-y-scroll max-h-[36vh]'>
+                        {parsedCards.map( (e, index) => (
+                          <ExternalUrl href={`https://mazii.net/vi-VN/search/word/javi/${e.front}`} key={index} className="text-white border-2 border-gray-600 px-2 py-1 rounded-md hover:bg-blue-500/10 hover:border-blue-500 cursor-pointer">
+                          {e.front}
+                        </ExternalUrl>                      )
+                        )}
+                      </div>
+                    </>
+                  )}
+
+                  <button
+                    onClick={handleUploadCSV}
+                    disabled={isUploading} // Vô hiệu hóa khi đang tải
+                    className={`px-4 py-2 rounded text-white bg-blue-600 hover:bg-blue-700`}
+                  >
+                    <LoadingAnimation state={isUploading} texts={['Đang cập nhập...', 'Xác nhận thêm thẻ']}/>
+                  </button>
+
+                </div>
+              ) : editingCard && (
+                <div className="flex flex-col gap-4">
+                <label>
+                  <span className="font-bold text-slate-200 mb-1">Mặt trước</span>
+                  <input
+                    type="text"
+                    value={editingCard.front}
+                    onChange={(e) => setEditingCard({ ...editingCard, front: e.target.value })}
+                    className="p-2 border rounded w-full text-slate-300 bg-slate-900 outline-none border-none"
+                  />
+                </label>
+
+                <label>
+                  <span className="font-bold text-slate-200 mb-1">Mặt sau</span>
+                  <textarea
+                    // type="text"
+                    value={editingCard.back}
+                    onChange={(e) => setEditingCard({ ...editingCard, back: e.target.value })}
+                    className="p-2 border rounded w-full text-slate-300 bg-slate-900 outline-none border-none"
+                  />
+                </label>
+
+                <div>
+                  <div className='flex justify-between items-center'>
+                    <span className="font-bold text-slate-200 ">Tags</span>
+                    <button
+                      onClick={() => setIsAddingTag(prev => !prev)}
+                      className="p-2"
+                    >
+                      <PlusIcon className='w-5 h-5 text-blue-600 rounded text-bold hover:text-white hover:bg-blue-600'/>
+                    </button>
+                  </div>
+                  {/* Nút thêm tag */}
+                  {!isAddingTag ? (
+                    ""
+                  ) : (
+                    <div className="mt-2 flex gap-2">
+                      <input
+                        type="text"
+                        value={newTagName}
+                        onChange={(e) => setNewTagName(e.target.value)}
+                        className="p-2 border rounded w-full text-slate-300 bg-slate-900 outline-none"
+                        placeholder="Nhập tên tag..."
+                      />
+                      <button
+                        onClick={handleAddTag}
+                        className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
+                      >
+                        Lưu
+                      </button>
+                    </div>
+                  )}
+                </div>
+                  <div className="grid grid-cols-2 gap-1">
                     {tags.map((tag) => (
-                      <label key={tag.id} className="flex items-center gap-2 text-slate-200">
-                        <input
-                          type="checkbox"
-                          checked={selectedBulkTagIds.includes(tag.id)}
-                          onChange={() => {
-                            setSelectedBulkTagIds((prev) =>
-                              prev.includes(tag.id)
-                                ? prev.filter((id) => id !== tag.id)
-                                : [...prev, tag.id]
-                            )
-                          }}
-                        />
-                        {tag.name}
-                      </label>
+                      <div key={tag.id} className="flex items-center justify-between bg-gray-800 p-1 rounded group hover:bg-slate-700">
+                        <label className="flex items-center gap-2 text-slate-300">
+                          <input
+                            type="checkbox"
+                            checked={selectedTags.includes(tag.id)}
+                            onChange={() => toggleTagSelection(tag.id)}
+                          />
+                          {tag.name}
+                        </label>
+                        {
+                          tag.id != 1 ? (
+                            <button
+                              onClick={() => handleDeleteTag(tag.id)}
+                              className="text-red-500 hover:text-red-700 hidden group-hover:flex"
+                            >
+                              🗑️
+                            </button>
+                          ) : ""
+                        }
+
+                      </div>
                     ))}
                   </div>
 
-                  <div className='flex gap-1 flex-wrap overflow-y-scroll max-h-[36vh]'>
-                    {parsedCards.map( (e, index) => (
-                      <ExternalUrl href={`https://mazii.net/vi-VN/search/word/javi/${e.front}`} key={index} className="text-white border-2 border-gray-600 px-2 py-1 rounded-md hover:bg-blue-500/10 hover:border-blue-500 cursor-pointer">
-                      {e.front}
-                    </ExternalUrl>                      )
-                    )}
-                  </div>
-                </>
-              )}
-
-              <button
-                onClick={handleUploadCSV}
-                disabled={isUploading} // Vô hiệu hóa khi đang tải
-                className={`px-4 py-2 rounded text-white bg-blue-600 hover:bg-blue-700`}
-              >
-                <LoadingAnimation state={isUploading} texts={['Đang cập nhập...', 'Xác nhận thêm thẻ']}/>
-              </button>
-
-            </div>
-          ) : editingCard && (
-            <div className="flex flex-col gap-4">
-            <label>
-              <span className="font-bold text-slate-200 mb-1">Mặt trước</span>
-              <input
-                type="text"
-                value={editingCard.front}
-                onChange={(e) => setEditingCard({ ...editingCard, front: e.target.value })}
-                className="p-2 border rounded w-full text-slate-300 bg-slate-900 outline-none border-none"
-              />
-            </label>
-
-            <label>
-              <span className="font-bold text-slate-200 mb-1">Mặt sau</span>
-              <textarea
-                // type="text"
-                value={editingCard.back}
-                onChange={(e) => setEditingCard({ ...editingCard, back: e.target.value })}
-                className="p-2 border rounded w-full text-slate-300 bg-slate-900 outline-none border-none"
-              />
-            </label>
-
-            <div>
-              <div className='flex justify-between items-center'>
-                <span className="font-bold text-slate-200 ">Tags</span>
-                <button
-                  onClick={() => setIsAddingTag(prev => !prev)}
-                  className="p-2"
-                >
-                  <PlusIcon className='w-5 h-5 text-blue-600 rounded text-bold hover:text-white hover:bg-blue-600'/>
-                </button>
-              </div>
-              {/* Nút thêm tag */}
-              {!isAddingTag ? (
-                ""
-              ) : (
-                <div className="mt-2 flex gap-2">
-                  <input
-                    type="text"
-                    value={newTagName}
-                    onChange={(e) => setNewTagName(e.target.value)}
-                    className="p-2 border rounded w-full text-slate-300 bg-slate-900 outline-none"
-                    placeholder="Nhập tên tag..."
-                  />
-                  <button
-                    onClick={handleAddTag}
-                    className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
-                  >
-                    Lưu
-                  </button>
-                </div>
-              )}
-            </div>
-              <div className="grid grid-cols-2 gap-1">
-                {tags.map((tag) => (
-                  <div key={tag.id} className="flex items-center justify-between bg-gray-800 p-1 rounded group hover:bg-slate-700">
-                    <label className="flex items-center gap-2 text-slate-300">
-                      <input
-                        type="checkbox"
-                        checked={selectedTags.includes(tag.id)}
-                        onChange={() => toggleTagSelection(tag.id)}
-                      />
-                      {tag.name}
-                    </label>
-                    {
-                      tag.id != 1 ? (
-                        <button
-                          onClick={() => handleDeleteTag(tag.id)}
-                          className="text-red-500 hover:text-red-700 hidden group-hover:flex"
-                        >
-                          🗑️
+                <div className='flex gap-1 justify-between'>
+                  <LoadingAnimation state={isUploading} texts={['Đang cập nhập...', (
+                        <>
+                        <button onClick={handleDelete} className="w-full px-4 py-2 bg-gray-300 text-gray-500 rounded hover:bg-red-700 hover:text-white">
+                          Xóa
                         </button>
-                      ) : ""
-                    }
-
-                  </div>
-                ))}
+                        <button onClick={handleSave} className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                          Lưu
+                        </button>
+                      </>
+                    )]}/>
+                </div>
               </div>
-
-            <div className='flex gap-1 justify-between'>
-              <LoadingAnimation state={isUploading} texts={['Đang cập nhập...', (
-                    <>
-                    <button onClick={handleDelete} className="w-full px-4 py-2 bg-gray-300 text-gray-500 rounded hover:bg-red-700 hover:text-white">
-                      Xóa
-                    </button>
-                    <button onClick={handleSave} className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-                      Lưu
-                    </button>
-                  </>
-                )]}/>
+              )}
             </div>
+
+          </Popup>
+
+          <div className='fixed right-2 bottom-4 sm:bottom-2 flex gap-2 flex-col-reverse transition-transform'>
+            {/* Nút thêm thẻ */}
+            <button onClick={handleAdd} className=" bg-blue-600 text-white rounded hover:bg-blue-700 p-2">
+              <PlusIcon className="h-6 w-6 text-white"></PlusIcon>
+            </button>
+
+            {/* Nút xuất thẻ */}
+            <button
+              onClick={handleExportCSV}
+              className="text-white rounded bg-blue-600 hover:bg-blue-700 p-2 hidden sm:flex"
+            >
+              <CloudArrowDownIcon className="h-6 w-6 text-white"/>
+            </button>
+
+            {/* Nút thư viện */}
+            <Link
+              to='/library'
+              className="text-white rounded bg-blue-600 hover:bg-blue-700 p-2"
+            >
+              <Squares2X2Icon className="h-6 w-6 text-white"/>
+            </Link>
+
+            <Link
+              to='/swipe-me'
+              className="text-white rounded bg-blue-600 hover:bg-blue-700 p-2"
+            >
+              <BoltIcon className="h-6 w-6 text-white"/>
+            </Link>
           </div>
-          )}
-        </div>
-
-      </Popup>
-
-      <div className='fixed right-2 bottom-4 sm:bottom-2 flex gap-2 flex-col-reverse transition-transform'>
-        {/* Nút thêm thẻ */}
-        <button onClick={handleAdd} className=" bg-blue-600 text-white rounded hover:bg-blue-700 p-2">
-          <PlusIcon className="h-6 w-6 text-white"></PlusIcon>
-        </button>
-
-        {/* Nút xuất thẻ */}
-        <button
-          onClick={handleExportCSV}
-          className="text-white rounded bg-blue-600 hover:bg-blue-700 p-2 hidden sm:flex"
-        >
-          <CloudArrowDownIcon className="h-6 w-6 text-white"/>
-        </button>
-
-        {/* Nút thư viện */}
-        <Link
-          to='/library'
-          className="text-white rounded bg-blue-600 hover:bg-blue-700 p-2"
-        >
-          <Squares2X2Icon className="h-6 w-6 text-white"/>
-        </Link>
-
-        <Link
-          to='/swipe-me'
-          className="text-white rounded bg-blue-600 hover:bg-blue-700 p-2"
-        >
-          <BoltIcon className="h-6 w-6 text-white"/>
-        </Link>
-      </div>
 
 
     </main>
