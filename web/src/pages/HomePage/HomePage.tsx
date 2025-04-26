@@ -2,34 +2,19 @@ import { Metadata, useQuery, useMutation, gql } from '@redwoodjs/web'
 import { Link, useLocation, navigate } from '@redwoodjs/router'
 import { useGlobal } from 'src/context/GlobalContext'
 import { useState, useEffect, useRef, useCallback } from 'react'
-import Popup from 'src/components/Popup'
-import PingDot from 'src/components/PingDot'
-import ExternalUrl from 'src/components/ExternalUrl'
-import LoadingAnimation from 'src/components/LoadingAnimation'
-import { BoltIcon, FunnelIcon, MagnifyingGlassIcon, PlusIcon, PencilSquareIcon, CloudArrowDownIcon, Squares2X2Icon, BookmarkIcon } from '@heroicons/react/24/solid'
 import Papa from 'papaparse'
-import {
-  BULK_CREATE_ANKI_CARDS,
-  GET_ANKI_CARDS,
-  GET_ANKI_TAGS,
-  CREATE_ANKI_CARD,
-  CREATE_ANKI_TAG,
-  UPDATE_ANKI_CARD,
-  UPDATE_ANKI_CARD_POINT,
-  DELETE_ANKI_CARD,
-  DELETE_ANKI_TAG,
-  UPDATE_STUDY_PROGRESS
-} from './HomPage.query'
-import { Router } from '@redwoodjs/router/serverRouter'
-
+import { GET_ANKI_CARDS, CREATE_ANKI_CARD, UPDATE_ANKI_CARD, DELETE_ANKI_CARD, BULK_CREATE_ANKI_CARDS, UPDATE_ANKI_CARD_POINT } from 'src/graphql/AnkiCard.query'
+import { GET_ANKI_TAGS, CREATE_ANKI_TAG, DELETE_ANKI_TAG } from 'src/graphql/AnkiTag.query'
+import { UPDATE_STUDY_PROGRESS } from 'src/graphql/Report.query'
 import useSpacedRepetition from 'src/hook/useSpacedRepetition'
-import ReviewStatusTag from 'src/components/ReviewStatusTag/ReviewStatusTag'
+import Popup from 'src/components/Popup'
+import LoadingAnimation from 'src/components/LoadingAnimation'
 import AnkiCard from 'src/components/AnkiCard/AnkiCard'
 import NavigationPanel from 'src/components/NavigationPanel/NavigationPanel'
 import SearchBox from 'src/components/SearchBox/SearchBox'
 import AnkiCardCRUDPopup from 'src/components/AnkiCardCRUDPopup/AnkiCardCRUDPopup'
 import BookmarkPanel from 'src/components/BookmarkPanel/BookmarkPanel'
-
+import BasicLayout from 'src/layouts/BasicLayout/BasicLayout'
 
 
 const HomePage = () => {
@@ -39,20 +24,10 @@ const HomePage = () => {
   const [isPopupOpen, setIsPopupOpen] = useState(false)
   const [isAdding, setIsAdding] = useState(false) // Kiểm tra trạng thái popup "Thêm thẻ"
   const [editingCard, setEditingCard] = useState(null)
-  const [selectedTags, setSelectedTags] = useState([])
-  const [isFilterVisible, setIsFilterVisible] = useState(false) // Toggle hiển thị bộ lọc
   const [cards, setCards] = useState([]) // Danh sách thẻ hiển thị
-  const [isAddingCSV, setIsAddingCSV] = useState(false) // Kiểm tra trạng thái upload CSV
-  const [parsedCards, setParsedCards] = useState([]) // Danh sách thẻ đã parse từ CSV
-  const [isUploading, setIsUploading] = useState(false) // Trạng thái upload
-  const [newTagName, setNewTagName] = useState('')
-  const [isAddingTag, setIsAddingTag] = useState(false)
   const [tags, setTags] = useState([])
   const [hiddenCards, setHiddenCards] = useState([]);
-  const [selectedBulkTagIds, setSelectedBulkTagIds] = useState([])
   const [highlightedCardId, setHighlightedCardId] = useState(null)
-  const [showBookmarks, setShowBookmarks] = useState(false)
-  const [bookmarkedCards, setBookmarkedCards] = useState([])
   const [bookmarkedFronts, setBookmarkedFronts] = useState<string[]>([])
 
   // Others
@@ -75,6 +50,7 @@ const HomePage = () => {
   //     navigate("/login")
   //   }
   // }, [])
+
   useEffect(() => {
     const stored = localStorage.getItem('hana-short-term-memory')
     if (stored) {
@@ -251,74 +227,88 @@ const HomePage = () => {
   }
 
   return (
-    <main className="p-4 mx-auto my-0 w-full sm:w-[85%] md:w-[75%] lg:w-[50%]">
-      <Metadata title="Home" description="Home page" />
+    <>
+    <Metadata title="Home" description="Home page" />
+    <BasicLayout
+      MainContent={
+          <>
 
-      <SearchBox
-        tags={tagData?.ankiTags || []}
-        onSearch={(searchTerm, selectedTagIds) => {
-          refetch({ searchTerm, tagIds: selectedTagIds })
-        }}
-      />
-
-      {/* Hiển thị danh sách thẻ */}
-      <LoadingAnimation state={loading} texts={['Đang tải dữ liệu...', '']} />
-      {error && <p className="text-red-500">Lỗi: {error.message}</p>}
-
-      <BookmarkPanel
-        bookmarkedCards={bookmarkedFronts}
-        cardRefs={cardRefs}
-        onRemoveBookmark={handleRemoveBookmark}
-        onBookmarkClick={handleBookmarkClick}
-      />
-
-      <div className="grid grid-cols-1 gap-4 ">
-        {cards.map((card) => (
-          <AnkiCard
-            key={card.id}
-            card={card}
-            hidden={hiddenCards.includes(card.id)}
-            highlighted={highlightedCardId === card.front}
-            onEdit={handleEdit}
-            onBookmark={handleBookmark}
-            onPointUpdate={handlePointUpdate}
-            cardRefs={cardRefs}
+          <SearchBox
+            tags={tagData?.ankiTags || []}
+            onSearch={(searchTerm, selectedTagIds) => {
+              refetch({ searchTerm, tagIds: selectedTagIds })
+            }}
           />
-        ))}
-      </div>
 
-      {/* Popup chỉnh sửa/thêm thẻ */}
-      <Popup title={isAdding ? 'Thêm thẻ mới' : 'Chỉnh sửa thẻ'} isOpen={isPopupOpen} onClose={handleClosePopup}>
-        <AnkiCardCRUDPopup
-          tags={tags}
-          onClose={handleClosePopup}
-          onSaveCard={async ({ front, back, tagIds }) => {
-            if (isAdding) {
-              await createAnkiCard({ variables: { input: { front, back, tagIds, point: -3 } } })
-            } else {
-              await updateAnkiCard({ variables: { id: editingCard.id, input: { front, back, tagIds, point: -1 } } })
-            }
-            refetch()
-          }}
-          onBulkUpload={async (cards, tagIds) => {
-            await createAnkiCards({ variables: { input: { cards: cards.map(card => ({ ...card, tagIds })), tagIds } } })
-            refetch()
-          }}
-          onDeleteCard={editingCard ? async () => {
-            await deleteAnkiCard({ variables: { id: editingCard.id } })
-            refetch()
-          } : undefined}
-          editingCard={editingCard}
-          isAdding={isAdding}
-        />
-      </Popup>
+          <LoadingAnimation state={loading} texts={['Đang tải dữ liệu...', '']} />
+          {error && <p className="text-red-500">Lỗi: {error.message}</p>}
 
-      <NavigationPanel
-        onInsert={handleAdd}
-        onExportCSV={handleExportCSV}
-      />
 
-    </main>
+          <div className="grid grid-cols-1 gap-4 max-w-full">
+            {cards.map((card) => (
+              <AnkiCard
+                key={card.id}
+                card={card}
+                hidden={hiddenCards.includes(card.id)}
+                highlighted={highlightedCardId === card.front}
+                onEdit={handleEdit}
+                onBookmark={handleBookmark}
+                onPointUpdate={handlePointUpdate}
+                cardRefs={cardRefs}
+              />
+            ))}
+          </div>
+
+          {/* Popup chỉnh sửa/thêm thẻ */}
+          <Popup title={isAdding ? 'Thêm thẻ mới' : 'Chỉnh sửa thẻ'} isOpen={isPopupOpen} onClose={handleClosePopup}>
+            <AnkiCardCRUDPopup
+              tags={tags}
+              onClose={handleClosePopup}
+              onSaveCard={async ({ front, back, tagIds }) => {
+                if (isAdding) {
+                  await createAnkiCard({ variables: { input: { front, back, tagIds, point: -3 } } })
+                } else {
+                  await updateAnkiCard({ variables: { id: editingCard.id, input: { front, back, tagIds, point: -1 } } })
+                }
+                refetch()
+              }}
+              onBulkUpload={async (cards, tagIds) => {
+                await createAnkiCards({ variables: { input: { cards: cards.map(card => ({ ...card, tagIds })), tagIds } } })
+                refetch()
+              }}
+              onDeleteCard={editingCard ? async () => {
+                await deleteAnkiCard({ variables: { id: editingCard.id } })
+                refetch()
+              } : undefined}
+              editingCard={editingCard}
+              isAdding={isAdding}
+            />
+          </Popup>
+          </>
+
+      }
+      // LeftSide={
+      //   <NavigationPanel
+      //     onInsert={handleAdd}
+      //     onExportCSV={handleExportCSV}
+      //   />
+      // }
+      RightSide={
+        <>
+          <BookmarkPanel
+            bookmarkedCards={bookmarkedFronts}
+            cardRefs={cardRefs}
+            onRemoveBookmark={handleRemoveBookmark}
+            onBookmarkClick={handleBookmarkClick}
+          />
+          <NavigationPanel
+            onInsert={handleAdd}
+            onExportCSV={handleExportCSV}
+          />
+        </>
+      }
+    />
+    </>
   )
 }
 

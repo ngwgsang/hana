@@ -1,5 +1,6 @@
 import { useQuery } from '@redwoodjs/web';
-import { GET_ANKI_CARDS, GET_ANKI_TAGS } from '../HomePage/HomPage.query';
+import { GET_ANKI_CARDS } from 'src/graphql/AnkiCard.query'
+import { GET_ANKI_TAGS } from 'src/graphql/AnkiTag.query'
 import { Link, navigate } from '@redwoodjs/router'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Together } from "together-ai"; // Import Together AI

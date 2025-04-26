@@ -1,7 +1,6 @@
 import { useQuery } from '@redwoodjs/web'
-import { useState, useEffect, useRef, useCallback } from 'react'
 import { format, subDays, startOfWeek, endOfWeek, formatISO } from 'date-fns'
-import {GET_DAILY_REPORT, GET_WEEKLY_REPORT, GET_WEEKLY_PROGRESS, GET_SCATTER_DATA  } from '../HomePage/HomPage.query'
+import { GET_DAILY_REPORT, GET_SCATTER_DATA, GET_WEEKLY_PROGRESS, GET_WEEKLY_REPORT } from 'src/graphql/Report.query'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ScatterChart , Scatter } from 'recharts'
 import { Link, navigate } from '@redwoodjs/router'
 import { AcademicCapIcon, Squares2X2Icon } from '@heroicons/react/24/solid'
@@ -187,9 +186,7 @@ const ReportPage = () => {
         </div>
       )}
     </div>
-
-
-      </div>
+    </div>
 
       <div className='fixed right-2 bottom-4 sm:bottom-2 flex gap-2 flex-col-reverse transition-transform'>
         {/* Nút thư viện */}

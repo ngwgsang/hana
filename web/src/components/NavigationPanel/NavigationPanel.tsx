@@ -9,36 +9,34 @@ interface NavigationPanelProps {
 
 const NavigationPanel = ({className, onInsert, onExportCSV}: NavigationPanelProps) => {
   return (
-    <div className='fixed right-2 bottom-4 sm:bottom-2 flex gap-2 flex-col-reverse transition-transform'>
+    <div className='flex-col gap-2 bg-slate-800 p-4 rounded shadow-lg max-h-[60vh] overflow-y-auto mt-4'>
 
-      {/* Nút thêm thẻ */}
-      <button onClick={onInsert} className=" bg-blue-600 text-white rounded hover:bg-blue-700 p-2">
-        <PlusIcon className="h-6 w-6 text-white"></PlusIcon>
-      </button>
 
-      {/* Nút xuất thẻ */}
-      <button
-        onClick={onExportCSV}
-        className="text-white rounded bg-blue-600 hover:bg-blue-700 p-2 hidden sm:flex"
-      >
-        <CloudArrowDownIcon className="h-6 w-6 text-white" />
-      </button>
+      <h3 className="text-lg font-bold text-white mb-2">Chức năng</h3>
+      <div className="flex gap-2">
+        <button onClick={onInsert} className="bg-blue-600 text-white rounded hover:bg-blue-700 p-2">
+          <PlusIcon className="h-6 w-6 text-white"></PlusIcon>
+        </button>
 
-      {/* Nút thư viện */}
-      <Link
-        to='/library'
-        className="text-white rounded bg-blue-600 hover:bg-blue-700 p-2"
-      >
-        <Squares2X2Icon className="h-6 w-6 text-white" />
-      </Link>
+        <button
+          onClick={onExportCSV}
+          className="text-white rounded bg-blue-600 hover:bg-blue-700 p-2 hidden sm:flex"
+        >
+          <CloudArrowDownIcon className="h-6 w-6 text-white" />
+        </button>
+      </div>
 
-      {/* Lướt thẻ  */}
-      <Link
-        to='/swipe-me'
-        className="text-white rounded bg-blue-600 hover:bg-blue-700 p-2"
-      >
-        <BoltIcon className="h-6 w-6 text-white" />
-      </Link>
+
+      <h3 className="mt-4 text-lg font-bold text-white mb-2">Lối tắt</h3>
+      <div>
+        <Link
+          to='/swipe-me'
+          className="rounded text-blue-600 hover:text-blue-700 hover:underline p-2 hidden sm:flex"
+        >
+          Luyện tập
+        </Link>
+      </div>
+
     </div>
   )
 }

@@ -43,7 +43,7 @@ const BookmarkPanel: React.FC<BookmarkPanelProps> = ({ bookmarkedCards, cardRefs
   // }
 
   return (
-    <div className="fixed top-4 right-4 z-50 bg-slate-800 p-4 rounded shadow-lg max-h-[60vh] overflow-y-auto w-[90%] md:w-[22vw] border border-blue-500">
+    <div className="bg-slate-800 p-4 rounded shadow-lg max-h-[60vh] overflow-y-auto border border-blue-500">
       <h3 className="text-lg font-bold text-white mb-2">📌 Thẻ đã ghim</h3>
       {bookmarkedCards.length > 0 ? (
         <ul className="space-y-2">
