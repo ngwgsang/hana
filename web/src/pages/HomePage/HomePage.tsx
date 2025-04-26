@@ -1,5 +1,5 @@
 import { Metadata, useQuery, useMutation, gql } from '@redwoodjs/web'
-import { Link, useLocation , navigate} from '@redwoodjs/router'
+import { Link, useLocation, navigate } from '@redwoodjs/router'
 import { useGlobal } from 'src/context/GlobalContext'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Popup from 'src/components/Popup'
@@ -21,10 +21,20 @@ import {
   UPDATE_STUDY_PROGRESS
 } from './HomPage.query'
 import { Router } from '@redwoodjs/router/serverRouter'
+
 import useSpacedRepetition from 'src/hook/useSpacedRepetition'
+import ReviewStatusTag from 'src/components/ReviewStatusTag/ReviewStatusTag'
+import AnkiCard from 'src/components/AnkiCard/AnkiCard'
+import NavigationPanel from 'src/components/NavigationPanel/NavigationPanel'
+import SearchBox from 'src/components/SearchBox/SearchBox'
+import AnkiCardCRUDPopup from 'src/components/AnkiCardCRUDPopup/AnkiCardCRUDPopup'
+import BookmarkPanel from 'src/components/BookmarkPanel/BookmarkPanel'
+
 
 
 const HomePage = () => {
+
+  // State
   const [searchTerm, setSearchTerm] = useState('')
   const [isPopupOpen, setIsPopupOpen] = useState(false)
   const [isAdding, setIsAdding] = useState(false) // Kiểm tra trạng thái popup "Thêm thẻ"
@@ -39,28 +49,48 @@ const HomePage = () => {
   const [isAddingTag, setIsAddingTag] = useState(false)
   const [tags, setTags] = useState([])
   const [hiddenCards, setHiddenCards] = useState([]);
+  const [selectedBulkTagIds, setSelectedBulkTagIds] = useState([])
+  const [highlightedCardId, setHighlightedCardId] = useState(null)
+  const [showBookmarks, setShowBookmarks] = useState(false)
+  const [bookmarkedCards, setBookmarkedCards] = useState([])
+  const [bookmarkedFronts, setBookmarkedFronts] = useState<string[]>([])
+
+  // Others
+  const cardRefs = useRef({}) // Map front -> ref
+  const global = useGlobal();
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const tagFromURL = searchParams.get('tag'); // Lấy giá trị tag từ URL
-  // const [selectedBulkTagId, setSelectedBulkTagId] = useState(1)
-  const [selectedBulkTagIds, setSelectedBulkTagIds] = useState([])
 
+  // Mutation
+  const [createAnkiCard] = useMutation(CREATE_ANKI_CARD, { onCompleted: () => refetch() })
+  const [updateAnkiCard] = useMutation(UPDATE_ANKI_CARD, { onCompleted: () => refetch() })
+  const [deleteAnkiCard] = useMutation(DELETE_ANKI_CARD, { onCompleted: () => refetch() })
+  const [createAnkiCards] = useMutation(BULK_CREATE_ANKI_CARDS, { onCompleted: () => refetch() })
+  const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
+  const [updateAnkiCardPoint] = useMutation(UPDATE_ANKI_CARD_POINT)
 
-const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
-
-  const global = useGlobal();
+  // useEffect(() => {
+  //   if (global.isAuth == false) {
+  //     navigate("/login")
+  //   }
+  // }, [])
   useEffect(() => {
-    if (global.isAuth == false) {
-      navigate("/login")
+    const stored = localStorage.getItem('hana-short-term-memory')
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored)
+        setBookmarkedFronts(parsed)
+      } catch (e) {
+        console.error('Lỗi đọc bookmark:', e)
+      }
     }
   }, [])
 
-  // Khi URL thay đổi, tự động refetch dữ liệu
   useEffect(() => {
     const tagId = tagFromURL ? parseInt(tagFromURL, 10) : null;
     refetch({ searchTerm, tagIds: tagId ? [tagId] : [] });
   }, [tagFromURL]);
-
 
   const { data, loading, error, refetch } = useQuery(GET_ANKI_CARDS, {
     variables: { searchTerm: '', tagIds: [] }, // Không cần skip/take nữa
@@ -76,11 +106,6 @@ const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
     },
   });
 
-  const [createAnkiCard] = useMutation(CREATE_ANKI_CARD, { onCompleted: () => refetch() })
-  const [updateAnkiCard] = useMutation(UPDATE_ANKI_CARD, { onCompleted: () => refetch() })
-  const [deleteAnkiCard] = useMutation(DELETE_ANKI_CARD, { onCompleted: () => refetch() })
-  const [createAnkiCards] = useMutation(BULK_CREATE_ANKI_CARDS, { onCompleted: () => refetch() })
-  const [updateAnkiCardPoint] = useMutation(UPDATE_ANKI_CARD_POINT)
   const { data: tagData } = useQuery(GET_ANKI_TAGS, {
     onCompleted: (data) => {
       if (data?.ankiTags) {
@@ -88,9 +113,11 @@ const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
       }
     }
   })
+
   const [createAnkiTag] = useMutation(CREATE_ANKI_TAG, {
     onCompleted: () => refetch(), // Tải lại danh sách tag sau khi thêm
   })
+
   const [deleteAnkiTag] = useMutation(DELETE_ANKI_TAG, {
     onCompleted: () => refetch(), // Tải lại danh sách tag sau khi xóa
   })
@@ -121,139 +148,12 @@ const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
     setIsPopupOpen(false)
   }
 
-  // Cập nhật hoặc thêm mới thẻ
-  const handleSave = async () => {
-    setIsUploading(true);
-    if (selectedTags.length === 0) {
-      selectedTags.push(1)
-    }
-    if (isAdding) {
-      await createAnkiCard({
-        variables: {
-          input: {
-            front: editingCard.front,
-            back: editingCard.back,
-            tagIds: selectedTags,
-            point: -3, // 🔥 Đảm bảo thẻ mới có point = -3
-          },
-        },
-      });
-    } else {
-      await updateAnkiCard({
-        variables: {
-          id: editingCard.id,
-          input: {
-            front: editingCard.front,
-            back: editingCard.back,
-            tagIds: selectedTags,
-            point: -1, // 🔥 Đảm bảo update cũng có point = -3
-          },
-        },
-      });
-    }
-    setIsUploading(false);
-    handleClosePopup();
-  };
-
-  // Xóa thẻ
-  const handleDelete = async () => {
-    if (confirm('Bạn có chắc chắn muốn xóa thẻ này?')) {
-      setIsUploading(true);
-      await deleteAnkiCard({ variables: { id: editingCard.id } })
-      setIsUploading(false);
-      handleClosePopup()
-    }
-  }
-
   // Chọn/bỏ chọn tag
   const toggleTagSelection = (tagId) => {
     setSelectedTags((prevTags) =>
       prevTags.includes(tagId) ? prevTags.filter((id) => id !== tagId) : [...prevTags, tagId]
     )
   }
-
-  const handleAddTag = async () => {
-    if (!newTagName.trim()) return // Không thêm tag rỗng
-
-    try {
-      const { data } = await createAnkiTag({
-        variables: { input: { name: newTagName } },
-      })
-
-      if (data?.createAnkiTag) {
-        // Cập nhật danh sách tag ngay lập tức
-        setTags([...tags, data.createAnkiTag])
-        setSelectedTags([...selectedTags, data.createAnkiTag.id]) // Nếu muốn chọn tag ngay khi tạo
-      }
-
-      setNewTagName('')
-      setIsAddingTag(false) // Ẩn ô nhập sau khi thêm
-    } catch (error) {
-      console.error('Lỗi khi thêm tag:', error)
-    }
-  }
-
-
-  const handleDeleteTag = async (tagId) => {
-    if (!confirm('Bạn có chắc chắn muốn xóa tag này?')) return
-
-    try {
-      await deleteAnkiTag({ variables: { id: tagId } })
-
-      // Cập nhật danh sách tag ngay lập tức
-      setTags(tags.filter(tag => tag.id !== tagId))
-      setSelectedTags(selectedTags.filter(id => id !== tagId)) // Xóa khỏi danh sách đã chọn
-    } catch (error) {
-      console.error('Lỗi khi xóa tag:', error)
-    }
-  }
-
-  // Xử lý khi chọn file CSV
-  const handleFileUpload = (event) => {
-    const file = event.target.files[0]
-    if (!file) return
-
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: (result) => {
-        const formattedCards = result.data.map((row) => ({
-          front: row.front,
-          back: row.back,
-          tagIds: [0], // Gán mặc định tag ID = 0
-        }))
-        setParsedCards(formattedCards)
-      },
-      error: (error) => console.error('Lỗi đọc file:', error),
-    })
-  }
-
-  // Gửi dữ liệu lên server để thêm vào database
-  const handleUploadCSV = async () => {
-    if (parsedCards.length === 0) {
-      alert('Không có dữ liệu để thêm!');
-      return;
-    }
-    setIsUploading(true); // Bật trạng thái loading
-
-    try {
-      const response = await createAnkiCards({
-        variables: {
-          input: {
-            cards: parsedCards,
-            tagIds: selectedBulkTagIds,
-          },
-        },
-      })
-      alert(`Đã thêm thẻ thành công ${response.data?.bulkCreateAnkiCards?.count || 0} thẻ!`);
-      setIsPopupOpen(false);
-      setParsedCards([]); // Reset danh sách
-    } catch (error) {
-      console.error('Lỗi khi thêm thẻ:', error);
-    } finally {
-      setIsUploading(false); // Tắt trạng thái loading
-    }
-  };
 
   const handleExportCSV = () => {
     if (cards.length === 0) {
@@ -283,26 +183,12 @@ const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
     document.body.removeChild(link);
   };
 
-
-  const getTimeElapsedText = (timeStamp) => {
-    const now = new Date()
-    const cardTimestamp = new Date(timeStamp)
-    const timeDifference = now - cardTimestamp // Kết quả là số mili-giây
-    const minutesAgo = Math.floor(timeDifference / 1000 / 60) // Chuyển sang phút
-    const hoursAgo = Math.floor(timeDifference / 1000 / 60 / 60) // Chuyển sang giờ
-    if (minutesAgo < 1) return "Vừa xong"
-    if (minutesAgo < 60) return `${minutesAgo} phút trước`
-    return ""
-  }
-
   const handlePointUpdate = async (cardId, pointChange) => {
     setHiddenCards((prevHidden) => [...prevHidden, cardId]);
     let status = ''
     if (pointChange === 1) status = 'good'
     if (pointChange === 0) status = 'normal'
     if (pointChange === -1) status = 'bad'
-
-
     setCards((prevCards) =>
       prevCards.map((card) => {
         if (card.id !== cardId) return card;
@@ -319,7 +205,6 @@ const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
           // Khi không chắc, giảm nhẹ hoặc giữ nguyên
           newPoint = Math.max(0, card.point - 1);
         }
-
         return { ...card, point: Math.round(newPoint) };
       })
     );
@@ -337,43 +222,14 @@ const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
     }
   };
 
-  const HandleSpecialText = (text) => {
-    if (!text) return "";
-
-    return text
-      .replace(/\n/g, "<br />") // Chuyển đổi xuống dòng thành <br />
-      .replace(/\*\*(.*?)\*\*/g, "<b class='group-hover:bg-sky-500/30 rounded-sm'>$1</b>"); // Chuyển ****text**** thành <b>text</b>
-  };
-
   const handleBookmark = (card) => {
     const key = 'hana-short-term-memory'
     const stored = JSON.parse(localStorage.getItem(key) || '[]')
 
-    // Tránh trùng lặp
     if (!stored.includes(card.front)) {
-      stored.push(card.front)
-      localStorage.setItem(key, JSON.stringify(stored))
-    }
-
-    if (showBookmarks) {
-      loadBookmarkedCards()
-      setShowBookmarks(true)
-    }
-  }
-
-  const [showBookmarks, setShowBookmarks] = useState(false)
-  const [bookmarkedCards, setBookmarkedCards] = useState([])
-  const cardRefs = useRef({}) // Map front -> ref
-
-  const loadBookmarkedCards = () => {
-    const stored = localStorage.getItem('hana-short-term-memory')
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored)
-        setBookmarkedCards(parsed)
-      } catch (e) {
-        console.error('Lỗi đọc bookmark:', e)
-      }
+      const updatedStored = [...stored, card.front]
+      localStorage.setItem(key, JSON.stringify(updatedStored))
+      setBookmarkedFronts(updatedStored) // 🔥 update state ngay
     }
   }
 
@@ -382,24 +238,8 @@ const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
     const stored = JSON.parse(localStorage.getItem(key) || '[]')
     const updated = stored.filter((item) => item !== frontToRemove)
     localStorage.setItem(key, JSON.stringify(updated))
-    setBookmarkedCards(updated)
+    setBookmarkedFronts(updated) // 🔥 update state ngay
   }
-
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.ctrlKey && e.key === 'z') {
-        e.preventDefault()
-        loadBookmarkedCards()
-        setShowBookmarks((prev) => !prev)
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [])
-
-
-  const [highlightedCardId, setHighlightedCardId] = useState(null)
 
   const handleBookmarkClick = (front) => {
     const el = document.getElementById(`card-${front}`)
@@ -414,362 +254,69 @@ const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
     <main className="p-4 mx-auto my-0 w-full sm:w-[85%] md:w-[75%] lg:w-[50%]">
       <Metadata title="Home" description="Home page" />
 
-      {/* Thanh tìm kiếm + nút lọc */}
-      <div className="flex gap-2 mb-4">
-        <input
-          type="text"
-          placeholder="Tìm kiếm thẻ..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="p-2 border border-blue-600 rounded w-full text-white bg-slate-800 focus:outline-blue-700"
-        />
-        <button
-          onClick={() => setIsFilterVisible(!isFilterVisible)}
-          className={`px-4 py-4  text-white rounded  text-sm ${isFilterVisible ? 'bg-blue-600 hover:bg-blue-700': 'bg-gray-600 hover:bg-gray-700'}`}
-        >
-          {/* {isFilterVisible ? 'Ẩn bộ lọc' : 'Bộ lọc'} */}
-          <FunnelIcon className='h-6 w-6 text-white'/>
-        </button>
-        <button
-          onClick={handleSearch}
-          className="px-4 py-4 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
-        >
-          {/* Tìm kiếm */}
-          <MagnifyingGlassIcon className="h-6 w-6 text-white" />
-        </button>
-      </div>
-
-      {isFilterVisible && (
-        <div className="bg-slate-800 p-4 rounded mb-4 border-2 border-blue-600">
-          <h3 className="text-lg font-semibold mb-2 text-white">Bộ lọc</h3>
-          <div className="grid grid-cols-2 gap-2">
-            {tagData?.ankiTags.map((tag) => (
-              <label key={tag.id} className="flex items-center gap-2 text-slate-300">
-                <input type="checkbox" checked={selectedTags.includes(tag.id)} onChange={() => toggleTagSelection(tag.id)} />
-                {tag.name}
-              </label>
-            ))}
-          </div>
-        </div>
-      )}
+      <SearchBox
+        tags={tagData?.ankiTags || []}
+        onSearch={(searchTerm, selectedTagIds) => {
+          refetch({ searchTerm, tagIds: selectedTagIds })
+        }}
+      />
 
       {/* Hiển thị danh sách thẻ */}
       <LoadingAnimation state={loading} texts={['Đang tải dữ liệu...', '']} />
       {error && <p className="text-red-500">Lỗi: {error.message}</p>}
 
-      {/* Short term memory */}
-      {showBookmarks && (
-      <div className="fixed top-4 right-4 z-50 bg-slate-800 p-4 rounded shadow-lg max-h-[60vh] overflow-y-auto w-[90%] md:w-[22vw] border border-blue-500">
-        <h3 className="text-lg font-bold text-white mb-2">📌 Thẻ đã ghim</h3>
-        {bookmarkedCards.length > 0 ? (
-          <ul className="space-y-2">
-            {bookmarkedCards.map((front, index) => (
-              <li
-                key={index}
-                className="flex justify-between items-center bg-slate-700 p-2 rounded text-white group hover:bg-blue-600"
-              >
-                <span
-                  className="cursor-pointer group-hover:underline"
-                  onClick={() => {
-                    const target = cardRefs.current[front]
-                    if (target) {
-                      target.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                    }
-                    handleBookmarkClick(target)
-                    // alert(front)
-                  }}
-                >
-                  {front}
-                </span>
+      <BookmarkPanel
+        bookmarkedCards={bookmarkedFronts}
+        cardRefs={cardRefs}
+        onRemoveBookmark={handleRemoveBookmark}
+        onBookmarkClick={handleBookmarkClick}
+      />
 
-                <button
-                  className="text-red-400 hover:text-red-600 text-sm ml-4"
-                  onClick={() => handleRemoveBookmark(front)}
-                >
-                  ❌
-                </button>
-              </li>
-            ))}
-          </ul>
-
-        ) : (
-          <p className="text-slate-400">Chưa có thẻ nào được lưu.</p>
-        )}
+      <div className="grid grid-cols-1 gap-4 ">
+        {cards.map((card) => (
+          <AnkiCard
+            key={card.id}
+            card={card}
+            hidden={hiddenCards.includes(card.id)}
+            highlighted={highlightedCardId === card.front}
+            onEdit={handleEdit}
+            onBookmark={handleBookmark}
+            onPointUpdate={handlePointUpdate}
+            cardRefs={cardRefs}
+          />
+        ))}
       </div>
-    )}
 
+      {/* Popup chỉnh sửa/thêm thẻ */}
+      <Popup title={isAdding ? 'Thêm thẻ mới' : 'Chỉnh sửa thẻ'} isOpen={isPopupOpen} onClose={handleClosePopup}>
+        <AnkiCardCRUDPopup
+          tags={tags}
+          onClose={handleClosePopup}
+          onSaveCard={async ({ front, back, tagIds }) => {
+            if (isAdding) {
+              await createAnkiCard({ variables: { input: { front, back, tagIds, point: -3 } } })
+            } else {
+              await updateAnkiCard({ variables: { id: editingCard.id, input: { front, back, tagIds, point: -1 } } })
+            }
+            refetch()
+          }}
+          onBulkUpload={async (cards, tagIds) => {
+            await createAnkiCards({ variables: { input: { cards: cards.map(card => ({ ...card, tagIds })), tagIds } } })
+            refetch()
+          }}
+          onDeleteCard={editingCard ? async () => {
+            await deleteAnkiCard({ variables: { id: editingCard.id } })
+            refetch()
+          } : undefined}
+          editingCard={editingCard}
+          isAdding={isAdding}
+        />
+      </Popup>
 
-
-
-          <div className="grid grid-cols-1 gap-4 ">
-            {cards.map((card, index) => (
-              <div
-                id={`card-${card.front}`}
-                ref={(el) => {
-                  if (el) cardRefs.current[card.front] = el
-                }}
-                key={card.id}
-                className={`p-4 bg-slate-700 rounded shadow relative group transition duration-300
-                  hover:ring-2 hover:shadow-lg hover:shadow-blue-500/50 hover:bg-slate-800
-                  ${highlightedCardId == card.front ? ' border-2 border-yellow-400 ' : ' '}
-                  ${hiddenCards.includes(card.id) ? 'hidden' : ''}`} >
-                {/* <h2 className="text-lg font-semibold text-white">{card.front}</h2> */}
-                <ExternalUrl className="text-lg font-semibold text-white" href={`https://mazii.net/vi-VN/search/word/javi/${card.front}`}>{card.front}</ExternalUrl>
-                <span className='absolute right-2 bottom-2 rounded text-sm text-blue-500'>{getTimeElapsedText(card.createdAt)}</span>
-                { getTimeElapsedText(card.createdAt) != "" ? <PingDot className='absolute -left-1 top-1 -translate-y-1/2'></PingDot> : ""}
-                <div className="text-slate-300" dangerouslySetInnerHTML={{ __html: HandleSpecialText(card.back) }} />
-
-
-                <div className="my-2 text-sm text-blue-500">
-                  {card.tags
-                    .slice() // Tạo một bản sao để tránh thay đổi dữ liệu gốc
-                    .sort((a, b) => a.name.localeCompare(b.name)) // Sắp xếp theo thứ tự bảng chữ cái
-                    .map((tag) => `#${tag.name} `)}
-                </div>
-
-                {/* Điểm số */}
-                {
-                        card.reviewScore < 0 &&
-                          <span className="text-sm text-red-500 border bg-red-500/10 border-red-500  mt-2 py-1 px-2 rounded-md w-auto font-semibold">
-                            <span>Cần ôn</span>
-                          </span>
-                }
-                {
-                        card.reviewScore == 0 &&
-                          <span className="text-sm text-orange-500 bg-orange-500/10 border border-orange-500 mt-2 py-1 px-2 rounded-md w-auto font-semibold">
-                            <span>Sắp đến hạn</span>
-                          </span>
-                }
-                {
-                        card.reviewScore > 0 &&
-                          <span className="text-sm text-green-500 bg-green-500/10 border border-green-500 mt-2 py-1 px-2 rounded-md w-auto font-semibold">
-                            <span>Chưa đến hạn</span>
-                          </span>
-                }
-                {/* <span>{card.reviewScore} {card.enrollAt}</span> */}
-
-                {/* Nút cập nhật điểm */}
-                <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 flex gap-2 bg-gray-800 p-2 rounded-lg shadow-lg transition-opacity duration-300">
-                  <button onClick={() => handlePointUpdate(card.id, -1)} className="bg-gray-500 text-xl w-10 h-10 rounded hover:bg-gray-700">😵‍💫</button>
-                  <button onClick={() => handlePointUpdate(card.id, 0)} className="bg-gray-500 text-xl w-10 h-10 rounded hover:bg-gray-700">🤯</button>
-                  <button onClick={() => handlePointUpdate(card.id, 1)} className="bg-gray-500 text-xl w-10 h-10 rounded hover:bg-gray-700">😎</button>
-                </div>
-
-
-                <div className='absolute top-2 right-2 flex gap-1'>
-                  <button
-                    onClick={() => handleEdit(card)}
-                    className="rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                  >
-                    <PencilSquareIcon className="h-6 w-6 text-gray-400 hover:text-gray-600" />
-                  </button>
-                  <button
-                    onClick={() => handleBookmark(card)}
-                    className="rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                  >
-                    <BookmarkIcon className="h-6 w-6 text-gray-400 hover:text-gray-600" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Popup chỉnh sửa/thêm thẻ */}
-          <Popup  title={isAdding ? 'Thêm thẻ mới' : 'Chỉnh sửa thẻ'} isOpen={isPopupOpen} onClose={handleClosePopup}>
-
-          <div className="flex flex-col gap-4">
-              {/* Chọn phương thức */}
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setIsAddingCSV(false)}
-                  className={`px-4 py-2 rounded w-full ${
-                    !isAddingCSV ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-700'
-                  }`}
-                >
-                  Thêm thủ công
-                </button>
-                <button
-                  onClick={() => setIsAddingCSV(true)}
-                  className={`px-4 py-2 rounded w-full ${
-                    isAddingCSV ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-700'
-                  }`}
-                >
-                  Upload CSV
-                </button>
-              </div>
-
-              {/* Nếu chọn thêm CSV */}
-              {isAddingCSV ? (
-                <div className="flex flex-col gap-3">
-                  <input type="file" accept=".csv" onChange={handleFileUpload} className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-600 dark:border-gray-600 dark:placeholder-gray-400" />
-                  {parsedCards.length > 0 && (
-                    <>
-                      <p className="text-sm text-gray-500">{parsedCards.length} thẻ sẽ được thêm</p>
-                      <div className="grid grid-cols-2 gap-2 p-4 rounded-md border-2 border-blue-500 bg-blue-500/10">
-                        {tags.map((tag) => (
-                          <label key={tag.id} className="flex items-center gap-2 text-slate-200">
-                            <input
-                              type="checkbox"
-                              checked={selectedBulkTagIds.includes(tag.id)}
-                              onChange={() => {
-                                setSelectedBulkTagIds((prev) =>
-                                  prev.includes(tag.id)
-                                    ? prev.filter((id) => id !== tag.id)
-                                    : [...prev, tag.id]
-                                )
-                              }}
-                            />
-                            {tag.name}
-                          </label>
-                        ))}
-                      </div>
-
-                      <div className='flex gap-1 flex-wrap overflow-y-scroll max-h-[36vh]'>
-                        {parsedCards.map( (e, index) => (
-                          <ExternalUrl href={`https://mazii.net/vi-VN/search/word/javi/${e.front}`} key={index} className="text-white border-2 border-gray-600 px-2 py-1 rounded-md hover:bg-blue-500/10 hover:border-blue-500 cursor-pointer">
-                          {e.front}
-                        </ExternalUrl>                      )
-                        )}
-                      </div>
-                    </>
-                  )}
-
-                  <button
-                    onClick={handleUploadCSV}
-                    disabled={isUploading} // Vô hiệu hóa khi đang tải
-                    className={`px-4 py-2 rounded text-white bg-blue-600 hover:bg-blue-700`}
-                  >
-                    <LoadingAnimation state={isUploading} texts={['Đang cập nhập...', 'Xác nhận thêm thẻ']}/>
-                  </button>
-
-                </div>
-              ) : editingCard && (
-                <div className="flex flex-col gap-4">
-                <label>
-                  <span className="font-bold text-slate-200 mb-1">Mặt trước</span>
-                  <input
-                    type="text"
-                    value={editingCard.front}
-                    onChange={(e) => setEditingCard({ ...editingCard, front: e.target.value })}
-                    className="p-2 border rounded w-full text-slate-300 bg-slate-900 outline-none border-none"
-                  />
-                </label>
-
-                <label>
-                  <span className="font-bold text-slate-200 mb-1">Mặt sau</span>
-                  <textarea
-                    // type="text"
-                    value={editingCard.back}
-                    onChange={(e) => setEditingCard({ ...editingCard, back: e.target.value })}
-                    className="p-2 border rounded w-full text-slate-300 bg-slate-900 outline-none border-none"
-                  />
-                </label>
-
-                <div>
-                  <div className='flex justify-between items-center'>
-                    <span className="font-bold text-slate-200 ">Tags</span>
-                    <button
-                      onClick={() => setIsAddingTag(prev => !prev)}
-                      className="p-2"
-                    >
-                      <PlusIcon className='w-5 h-5 text-blue-600 rounded text-bold hover:text-white hover:bg-blue-600'/>
-                    </button>
-                  </div>
-                  {/* Nút thêm tag */}
-                  {!isAddingTag ? (
-                    ""
-                  ) : (
-                    <div className="mt-2 flex gap-2">
-                      <input
-                        type="text"
-                        value={newTagName}
-                        onChange={(e) => setNewTagName(e.target.value)}
-                        className="p-2 border rounded w-full text-slate-300 bg-slate-900 outline-none"
-                        placeholder="Nhập tên tag..."
-                      />
-                      <button
-                        onClick={handleAddTag}
-                        className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
-                      >
-                        Lưu
-                      </button>
-                    </div>
-                  )}
-                </div>
-                  <div className="grid grid-cols-2 gap-1">
-                    {tags.map((tag) => (
-                      <div key={tag.id} className="flex items-center justify-between bg-gray-800 p-1 rounded group hover:bg-slate-700">
-                        <label className="flex items-center gap-2 text-slate-300">
-                          <input
-                            type="checkbox"
-                            checked={selectedTags.includes(tag.id)}
-                            onChange={() => toggleTagSelection(tag.id)}
-                          />
-                          {tag.name}
-                        </label>
-                        {
-                          tag.id != 1 ? (
-                            <button
-                              onClick={() => handleDeleteTag(tag.id)}
-                              className="text-red-500 hover:text-red-700 hidden group-hover:flex"
-                            >
-                              🗑️
-                            </button>
-                          ) : ""
-                        }
-
-                      </div>
-                    ))}
-                  </div>
-
-                <div className='flex gap-1 justify-between'>
-                  <LoadingAnimation state={isUploading} texts={['Đang cập nhập...', (
-                        <>
-                        <button onClick={handleDelete} className="w-full px-4 py-2 bg-gray-300 text-gray-500 rounded hover:bg-red-700 hover:text-white">
-                          Xóa
-                        </button>
-                        <button onClick={handleSave} className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-                          Lưu
-                        </button>
-                      </>
-                    )]}/>
-                </div>
-              </div>
-              )}
-            </div>
-
-          </Popup>
-
-          <div className='fixed right-2 bottom-4 sm:bottom-2 flex gap-2 flex-col-reverse transition-transform'>
-            {/* Nút thêm thẻ */}
-            <button onClick={handleAdd} className=" bg-blue-600 text-white rounded hover:bg-blue-700 p-2">
-              <PlusIcon className="h-6 w-6 text-white"></PlusIcon>
-            </button>
-
-            {/* Nút xuất thẻ */}
-            <button
-              onClick={handleExportCSV}
-              className="text-white rounded bg-blue-600 hover:bg-blue-700 p-2 hidden sm:flex"
-            >
-              <CloudArrowDownIcon className="h-6 w-6 text-white"/>
-            </button>
-
-            {/* Nút thư viện */}
-            <Link
-              to='/library'
-              className="text-white rounded bg-blue-600 hover:bg-blue-700 p-2"
-            >
-              <Squares2X2Icon className="h-6 w-6 text-white"/>
-            </Link>
-
-            <Link
-              to='/swipe-me'
-              className="text-white rounded bg-blue-600 hover:bg-blue-700 p-2"
-            >
-              <BoltIcon className="h-6 w-6 text-white"/>
-            </Link>
-          </div>
-
+      <NavigationPanel
+        onInsert={handleAdd}
+        onExportCSV={handleExportCSV}
+      />
 
     </main>
   )

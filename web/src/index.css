@@ -22,6 +22,30 @@
 }
 }
 
+/* width */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  background:oklch(37.3% 0.034 259.733);
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: oklch(27.9% 0.041 260.031);
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+  background:  oklch(86.9% 0.022 252.894) ;
+}
+
+input[type="file"] {
+  display: none;
+}
+
 body {
   /* background-size: 40px 40px;
   background-image: radial-gradient(circle, black 2px, rgba(0, 0, 0, 0) 1px); */
