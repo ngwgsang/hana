@@ -1,10 +1,21 @@
 import { useQuery, useMutation } from '@redwoodjs/web'
 import { useState } from 'react'
-import { GET_ANKI_CARDS, UPDATE_ANKI_CARD_POINT, UPDATE_STUDY_PROGRESS } from '../HomePage/HomPage.query'
+import { GET_ANKI_CARDS, UPDATE_ANKI_CARD_POINT } from 'src/graphql/AnkiCard.query'
+import { UPDATE_STUDY_PROGRESS } from 'src/graphql/Report.query'
 import { ArrowUturnLeftIcon } from '@heroicons/react/24/solid'
 import { Link } from '@redwoodjs/router'
 import useSpacedRepetition from 'src/hook/useSpacedRepetition'
 
+const SwipeCardSkeleton = () => {
+  return (
+    <div className="w-full h-[80vh] sm:h-96 flex items-center justify-center animate-pulse">
+      <div className="w-full h-full p-8 rounded-xl bg-slate-700 shadow relative animate-pulse flex flex-col justify-center items-center">
+        <div className="h-8 bg-gray-600 rounded w-3/4 mb-4"></div>
+        <div className="h-6 bg-gray-600 rounded w-1/2"></div>
+      </div>
+    </div>
+  )
+}
 
 const SwipeMePage = () => {
 
@@ -22,7 +33,6 @@ const SwipeMePage = () => {
     },
   });
 
-
   const [updateAnkiCardPoint] = useMutation(UPDATE_ANKI_CARD_POINT)
   const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
   const [cards, setCards] = useState([]) // Danh sách thẻ hiển thị
@@ -31,7 +41,7 @@ const SwipeMePage = () => {
   const [animation, setAnimation] = useState("") // Animation trượt thẻ
   const [borderColor, setBorderColor] = useState("") // Border color
 
-  if (loading) return <p className="text-white">Đang tải...</p>
+  // if (loading) return <p className="text-white">Đang tải...</p>
   if (error) return <p className="text-red-500">Lỗi khi tải dữ liệu!</p>
 
   const handleSelect = async (status) => {
@@ -95,10 +105,12 @@ const SwipeMePage = () => {
       </Link>
 
       <div className="relative w-full h-[80vh] sm:h-96 flex items-center justify-center overflow-hidden">
-        {currentIndex < cards.length ? (
+      {loading ? (
+          <SwipeCardSkeleton />
+        ) : currentIndex < cards.length ? (
           <div
             className={`absolute w-full h-full flex items-center justify-center rounded-xl shadow-lg transition-all duration-500 ${animation}`}
-            onClick={() => setIsFlipped(!isFlipped)} // Lật khi chạm vào thẻ
+            onClick={() => setIsFlipped(!isFlipped)}
           >
             <div className={`relative w-full h-full flex items-center justify-center text-white p-8 rounded-xl ${borderColor == "" ? "bg-gray-800" : borderColor + " border-2 "}`}>
               {/* Mặt trước */}
@@ -116,6 +128,7 @@ const SwipeMePage = () => {
           <p className="text-white text-lg">🎉 Hết thẻ! Bạn đã hoàn thành.</p>
         )}
       </div>
+
 
       {/* Nút chọn kết quả */}
       <div className="flex justify-between mt-6 w-full gap-2">

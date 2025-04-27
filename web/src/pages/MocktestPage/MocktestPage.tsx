@@ -3,15 +3,12 @@ import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import LoadingAnimation from 'src/components/LoadingAnimation/LoadingAnimation';
 import Popup from 'src/components/Popup/Popup';
 import { Link, navigate } from '@redwoodjs/router'
-import { AcademicCapIcon, Squares2X2Icon, InformationCircleIcon } from '@heroicons/react/24/solid'
+import { AcademicCapIcon, Squares2X2Icon, InformationCircleIcon, ArrowUturnLeftIcon } from '@heroicons/react/24/solid'
 import { useGlobal } from 'src/context/GlobalContext'
 import { Metadata, useQuery, useMutation, gql } from '@redwoodjs/web'
-import {
-  GET_ANKI_CARDS,
-  UPDATE_ANKI_CARD_POINT,
-  UPDATE_STUDY_PROGRESS,
-  GET_ANKI_TAGS
-} from '../HomePage/HomPage.query'
+import { GET_ANKI_TAGS } from 'src/graphql/AnkiTag.query';
+import { GET_ANKI_CARDS, UPDATE_ANKI_CARD_POINT } from 'src/graphql/AnkiCard.query';
+import { UPDATE_STUDY_PROGRESS } from 'src/graphql/Report.query';
 import { QUESTION_TYPES } from './QuestionType';
 import ExternalUrl from 'src/components/ExternalUrl/ExternalUrl';
 
@@ -243,8 +240,10 @@ const MocktestPage = () => {
     <main className="p-4 mx-auto w-full sm:w-3/4 lg:w-1/2 flex flex-col relative">
       <Metadata title="Mock Test" description="JLPT Practice Quiz" />
 
-      <h1 className="text-xl font-bold mb-4 text-white">☕ JLPT</h1>
-
+      {/* <h1 className="text-xl font-bold mb-4 text-white">JLPT</h1> */}
+      <Link to="/home">
+        <ArrowUturnLeftIcon className="h-6 w-6 text-white mb-2" />
+      </Link>
       <div className="bg-gray-800 text-white p-4 rounded mb-4">
         <h2 className="text-lg font-bold mb-2">Tạo câu hỏi JLPT</h2>
         <div className="flex flex-col sm:flex-row gap-2 mb-2">
@@ -256,7 +255,7 @@ const MocktestPage = () => {
               onChange={handleNumQuestionsChange}
               className="bg-gray-700 text-white p-2 rounded w-full"
             >
-              {[5, 10, 12].map((num) => (
+              {[3, 5, 10].map((num) => (
                 <option key={num} value={num}>
                   {num} câu
                 </option>
@@ -404,21 +403,6 @@ const MocktestPage = () => {
         <p className="text-xl text-center my-16 font-bold text-white">🎉 Bạn đã làm đúng {correctCount}/{questions.length} câu!</p>
       </Popup>
 
-      <div className='fixed right-2 bottom-4 sm:bottom-2 flex gap-2 flex-col-reverse transition-transform'>
-        {/* Nút thư viện */}
-        <Link
-          to='/home'
-          className="text-white rounded bg-blue-600 hover:bg-blue-700 p-2"
-        >
-          <AcademicCapIcon className="h-6 w-6 text-white"/>
-        </Link>
-        <Link
-          to='/library'
-          className="text-white rounded bg-blue-600 hover:bg-blue-700 p-2"
-        >
-          <Squares2X2Icon className="h-6 w-6 text-white"/>
-        </Link>
-      </div>
     </main>
 
 

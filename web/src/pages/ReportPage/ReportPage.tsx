@@ -3,7 +3,7 @@ import { format, subDays, startOfWeek, endOfWeek, formatISO } from 'date-fns'
 import { GET_DAILY_REPORT, GET_SCATTER_DATA, GET_WEEKLY_PROGRESS, GET_WEEKLY_REPORT } from 'src/graphql/Report.query'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ScatterChart , Scatter } from 'recharts'
 import { Link, navigate } from '@redwoodjs/router'
-import { AcademicCapIcon, Squares2X2Icon } from '@heroicons/react/24/solid'
+import { AcademicCapIcon, Squares2X2Icon, ArrowUturnLeftIcon } from '@heroicons/react/24/solid'
 import { useGlobal } from 'src/context/GlobalContext'
 import ExternalUrl from 'src/components/ExternalUrl/ExternalUrl'
 import useSpacedRepetition from 'src/hook/useSpacedRepetition'
@@ -86,6 +86,10 @@ const ReportPage = () => {
 
   return (
     <main className="p-4 mx-auto w-full sm:w-3/4 lg:w-1/2 flex flex-col relative">
+      <Link to="/home">
+        <ArrowUturnLeftIcon className="h-6 w-6 text-white mb-2" />
+      </Link>
+
       <h1 className="text-xl font-bold mb-4 text-white">🍃Báo Cáo Học Tập</h1>
 
       <div className="bg-gray-800 text-white p-4 rounded mb-4">
@@ -188,21 +192,6 @@ const ReportPage = () => {
     </div>
     </div>
 
-      <div className='fixed right-2 bottom-4 sm:bottom-2 flex gap-2 flex-col-reverse transition-transform'>
-        {/* Nút thư viện */}
-        <Link
-          to='/home'
-          className="text-white rounded bg-blue-600 hover:bg-blue-700 p-2"
-        >
-          <AcademicCapIcon className="h-6 w-6 text-white"/>
-        </Link>
-        <Link
-          to='/library'
-          className="text-white rounded bg-blue-600 hover:bg-blue-700 p-2"
-        >
-          <Squares2X2Icon className="h-6 w-6 text-white"/>
-        </Link>
-      </div>
     </main>
   )
 }

@@ -15,20 +15,24 @@ import SearchBox from 'src/components/SearchBox/SearchBox'
 import AnkiCardCRUDPopup from 'src/components/AnkiCardCRUDPopup/AnkiCardCRUDPopup'
 import BookmarkPanel from 'src/components/BookmarkPanel/BookmarkPanel'
 import BasicLayout from 'src/layouts/BasicLayout/BasicLayout'
-
+import TagList from 'src/components/TagList/TagList'
+import ProgressPanel from 'src/components/ProgressPanel/ProgressPanel'
+import AnkiCardSkeleton from 'src/components/AnkiCardSkeleton/AnkiCardSkeleton'
 
 const HomePage = () => {
 
   // State
   const [searchTerm, setSearchTerm] = useState('')
   const [isPopupOpen, setIsPopupOpen] = useState(false)
-  const [isAdding, setIsAdding] = useState(false) // Kiểm tra trạng thái popup "Thêm thẻ"
+  const [isAdding, setIsAdding] = useState(false)
   const [editingCard, setEditingCard] = useState(null)
-  const [cards, setCards] = useState([]) // Danh sách thẻ hiển thị
+  const [originalCards, setOriginalCards] = useState([]);
+  const [cards, setCards] = useState([]);
   const [tags, setTags] = useState([])
   const [hiddenCards, setHiddenCards] = useState([]);
   const [highlightedCardId, setHighlightedCardId] = useState(null)
   const [bookmarkedFronts, setBookmarkedFronts] = useState<string[]>([])
+  const [selectedTags, setSelectedTags] = useState([])
 
   // Others
   const cardRefs = useRef({}) // Map front -> ref
@@ -69,18 +73,23 @@ const HomePage = () => {
   }, [tagFromURL]);
 
   const { data, loading, error, refetch } = useQuery(GET_ANKI_CARDS, {
-    variables: { searchTerm: '', tagIds: [] }, // Không cần skip/take nữa
+    variables: { searchTerm: '', tagIds: [] },
     onCompleted: (data) => {
       if (!data?.ankiCards) return;
 
-      const sortedCards = data.ankiCards.map((card) => {
+      // ❗ Chỉ gán cards, không đụng originalCards nữa sau lần đầu tiên
+      setCards(data.ankiCards.map((card) => {
         const { reviewScore } = useSpacedRepetition(card.point, card.enrollAt);
         return { ...card, reviewScore };
-      }).sort((a, b) => a.reviewScore - b.reviewScore); // Sắp xếp tăng dần theo reviewScore
+      }).sort((a, b) => a.reviewScore - b.reviewScore));
 
-      setCards(sortedCards);
+      // 🔥 Nếu originalCards chưa có giá trị thì mới set
+      if (originalCards.length === 0) {
+        setOriginalCards(data.ankiCards);
+      }
     },
   });
+
 
   const { data: tagData } = useQuery(GET_ANKI_TAGS, {
     onCompleted: (data) => {
@@ -226,6 +235,7 @@ const HomePage = () => {
     }
   }
 
+
   return (
     <>
     <Metadata title="Home" description="Home page" />
@@ -233,19 +243,19 @@ const HomePage = () => {
       MainContent={
           <>
 
-          <SearchBox
+          {/* <SearchBox
             tags={tagData?.ankiTags || []}
             onSearch={(searchTerm, selectedTagIds) => {
               refetch({ searchTerm, tagIds: selectedTagIds })
             }}
-          />
+          /> */}
 
-          <LoadingAnimation state={loading} texts={['Đang tải dữ liệu...', '']} />
+          {/* <LoadingAnimation state={loading} texts={['Đang tải dữ liệu...', '']} /> */}
           {error && <p className="text-red-500">Lỗi: {error.message}</p>}
 
 
           <div className="grid grid-cols-1 gap-4 max-w-full">
-            {cards.map((card) => (
+            {/* {cards.map((card) => (
               <AnkiCard
                 key={card.id}
                 card={card}
@@ -256,7 +266,24 @@ const HomePage = () => {
                 onPointUpdate={handlePointUpdate}
                 cardRefs={cardRefs}
               />
-            ))}
+            ))} */}
+            {loading ? (
+              Array(8).fill(0).map((_, idx) => <AnkiCardSkeleton key={idx} />)
+            ) : (
+              cards.map((card) => (
+                <AnkiCard
+                key={card.id}
+                card={card}
+                hidden={hiddenCards.includes(card.id)}
+                highlighted={highlightedCardId === card.front}
+                onEdit={handleEdit}
+                onBookmark={handleBookmark}
+                onPointUpdate={handlePointUpdate}
+                cardRefs={cardRefs}
+              />
+              ))
+            )}
+
           </div>
 
           {/* Popup chỉnh sửa/thêm thẻ */}
@@ -287,23 +314,25 @@ const HomePage = () => {
           </>
 
       }
-      // LeftSide={
-      //   <NavigationPanel
-      //     onInsert={handleAdd}
-      //     onExportCSV={handleExportCSV}
-      //   />
-      // }
+
+      LeftSide={
+        <>
+          <ProgressPanel cards={originalCards} tags={tags} />
+          <TagList tags={tagData?.ankiTags || []} cards={originalCards} />
+        </>
+      }
+
       RightSide={
         <>
+          <NavigationPanel
+            onInsert={handleAdd}
+            onExportCSV={handleExportCSV}
+          />
           <BookmarkPanel
             bookmarkedCards={bookmarkedFronts}
             cardRefs={cardRefs}
             onRemoveBookmark={handleRemoveBookmark}
             onBookmarkClick={handleBookmarkClick}
-          />
-          <NavigationPanel
-            onInsert={handleAdd}
-            onExportCSV={handleExportCSV}
           />
         </>
       }

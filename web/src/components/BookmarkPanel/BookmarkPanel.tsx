@@ -9,41 +9,8 @@ interface BookmarkPanelProps {
 }
 
 const BookmarkPanel: React.FC<BookmarkPanelProps> = ({ bookmarkedCards, cardRefs, onRemoveBookmark, onBookmarkClick }) => {
-  const key = 'hana-short-term-memory'
-
-  // Load bookmarks từ localStorage khi mount
-  // useEffect(() => {
-  //   const stored = localStorage.getItem(key)
-  //   if (stored) {
-  //     try {
-  //       const parsed = JSON.parse(stored)
-  //       setBookmarkedCards(parsed)
-  //     } catch (e) {
-  //       console.error('Lỗi đọc bookmark:', e)
-  //     }
-  //   }
-  // }, [])
-
-  // const handleRemoveBookmark = (frontToRemove: string) => {
-  //   const stored = JSON.parse(localStorage.getItem(key) || '[]')
-  //   const updated = stored.filter((item: string) => item !== frontToRemove)
-  //   localStorage.setItem(key, JSON.stringify(updated))
-  //   setBookmarkedCards(updated)
-  // }
-
-  // const handleBookmarkClick = (front: string) => {
-  //   const el = document.getElementById(`card-${front}`)
-  //   if (el) {
-  //     el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-  //     el.classList.add('border-red-500')
-  //     setTimeout(() => {
-  //       el.classList.remove('border-red-500')
-  //     }, 1500)
-  //   }
-  // }
-
   return (
-    <div className="bg-slate-800 p-4 rounded shadow-lg max-h-[60vh] overflow-y-auto border border-blue-500">
+    <div className={`bg-slate-800 p-4 rounded shadow-lg max-h-[60vh] overflow-y-auto hidden lg:block ${bookmarkedCards.length > 0 ? 'border border-blue-500': ''}`}>
       <h3 className="text-lg font-bold text-white mb-2">📌 Thẻ đã ghim</h3>
       {bookmarkedCards.length > 0 ? (
         <ul className="space-y-2">
