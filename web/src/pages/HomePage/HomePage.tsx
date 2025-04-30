@@ -18,6 +18,8 @@ import BasicLayout from 'src/layouts/BasicLayout/BasicLayout'
 import TagList from 'src/components/TagList/TagList'
 import ProgressPanel from 'src/components/ProgressPanel/ProgressPanel'
 import AnkiCardSkeleton from 'src/components/AnkiCardSkeleton/AnkiCardSkeleton'
+import StatusPanel from 'src/components/StatusPanel/StatusPanel'
+
 
 const HomePage = () => {
 
@@ -33,6 +35,7 @@ const HomePage = () => {
   const [highlightedCardId, setHighlightedCardId] = useState(null)
   const [bookmarkedFronts, setBookmarkedFronts] = useState<string[]>([])
   const [selectedTags, setSelectedTags] = useState([])
+  const [activeStatusFilter, setActiveStatusFilter] = useState(null)
 
   // Others
   const cardRefs = useRef({}) // Map front -> ref
@@ -54,6 +57,24 @@ const HomePage = () => {
   //     navigate("/login")
   //   }
   // }, [])
+  const filterCardsByStatus = (cards, statusKey) => {
+    if (!statusKey) return cards
+
+    const statusMap = {
+      urgent: [-999, -2],
+      upcoming: [-2, 0],
+      known: [0, 999],
+    }
+
+    const [min, max] = statusMap[statusKey]
+
+    console.log('Filtering cards with status:', statusKey, 'Range:', min, max)
+
+    return cards.filter((card) => {
+      const score = card.reviewScore ?? 0
+      return score >= min && score < max
+    })
+  }
 
   useEffect(() => {
     const stored = localStorage.getItem('hana-short-term-memory')
@@ -67,9 +88,15 @@ const HomePage = () => {
     }
   }, [])
 
+  // useEffect(() => {
+  //   const tagId = tagFromURL ? parseInt(tagFromURL, 10) : null;
+  //   refetch({ searchTerm, tagIds: tagId ? [tagId] : [] });
+  // }, [tagFromURL]);
   useEffect(() => {
-    const tagId = tagFromURL ? parseInt(tagFromURL, 10) : null;
-    refetch({ searchTerm, tagIds: tagId ? [tagId] : [] });
+    const tagId = parseInt(tagFromURL ?? '', 10);
+    const tagIds = isNaN(tagId) || tagId === 0 ? [] : [tagId];
+
+    refetch({ searchTerm, tagIds });
   }, [tagFromURL]);
 
   const { data, loading, error, refetch } = useQuery(GET_ANKI_CARDS, {
@@ -79,6 +106,7 @@ const HomePage = () => {
 
       // ❗ Chỉ gán cards, không đụng originalCards nữa sau lần đầu tiên
       setCards(data.ankiCards.map((card) => {
+
         const { reviewScore } = useSpacedRepetition(card.point, card.enrollAt);
         return { ...card, reviewScore };
       }).sort((a, b) => a.reviewScore - b.reviewScore));
@@ -270,17 +298,29 @@ const HomePage = () => {
             {loading ? (
               Array(8).fill(0).map((_, idx) => <AnkiCardSkeleton key={idx} />)
             ) : (
-              cards.map((card) => (
+              // cards.map((card) => (
+              //   <AnkiCard
+              //   key={card.id}
+              //   card={card}
+              //   hidden={hiddenCards.includes(card.id)}
+              //   highlighted={highlightedCardId === card.front}
+              //   onEdit={handleEdit}
+              //   onBookmark={handleBookmark}
+              //   onPointUpdate={handlePointUpdate}
+              //   cardRefs={cardRefs}
+              // />
+              // ))
+              filterCardsByStatus(cards, activeStatusFilter).map((card) => (
                 <AnkiCard
-                key={card.id}
-                card={card}
-                hidden={hiddenCards.includes(card.id)}
-                highlighted={highlightedCardId === card.front}
-                onEdit={handleEdit}
-                onBookmark={handleBookmark}
-                onPointUpdate={handlePointUpdate}
-                cardRefs={cardRefs}
-              />
+                  key={card.id}
+                  card={card}
+                  hidden={hiddenCards.includes(card.id)}
+                  highlighted={highlightedCardId === card.front}
+                  onEdit={handleEdit}
+                  onBookmark={handleBookmark}
+                  onPointUpdate={handlePointUpdate}
+                  cardRefs={cardRefs}
+                />
               ))
             )}
 
@@ -318,6 +358,13 @@ const HomePage = () => {
       LeftSide={
         <>
           <ProgressPanel cards={originalCards} tags={tags} />
+          <StatusPanel
+            cards={cards}
+            activeStatus={activeStatusFilter}
+            onFilterStatus={(status) => {
+              setActiveStatusFilter(status === activeStatusFilter ? null : status)
+            }}
+          />
           <TagList tags={tagData?.ankiTags || []} cards={originalCards} />
         </>
       }

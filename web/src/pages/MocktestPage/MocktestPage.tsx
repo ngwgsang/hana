@@ -272,10 +272,6 @@ const MocktestPage = () => {
               className="bg-gray-700 text-white p-2 rounded w-full"
 
             >
-              {/* <option value="kanji">Cách đọc Kanji</option>
-              <option value="understand">Thông hiểu</option>
-              <option value="usage">Cách dùng từ</option>
-              <option value="meaning">Nghĩa của từ</option> */}
               {Object.entries(QUESTION_TYPES).map(([key, value]) => (
                 <option key={key} value={key}>
                   {value.title}

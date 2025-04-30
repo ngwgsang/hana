@@ -10,14 +10,14 @@ interface BookmarkPanelProps {
 
 const BookmarkPanel: React.FC<BookmarkPanelProps> = ({ bookmarkedCards, cardRefs, onRemoveBookmark, onBookmarkClick }) => {
   return (
-    <div className={`bg-slate-800 p-4 rounded shadow-lg max-h-[60vh] overflow-y-auto hidden lg:block ${bookmarkedCards.length > 0 ? 'border border-blue-500': ''}`}>
+    <div className={`bg-slate-800 p-4 rounded shadow-lg hidden lg:block ${bookmarkedCards.length > 0 ? 'border border-blue-500': ''}`}>
       <h3 className="text-lg font-bold text-white mb-2">📌 Thẻ đã ghim</h3>
       {bookmarkedCards.length > 0 ? (
-        <ul className="space-y-2">
+        <ul className="space-y-2 max-h-[52vh] pr-2 overflow-y-auto">
           {bookmarkedCards.map((front, index) => (
             <li
               key={index}
-              className="flex justify-between items-center bg-slate-700 p-2 rounded text-white group hover:bg-blue-600"
+              className="flex justify-between items-center bg-slate-700 p-2 rounded text-white group hover:bg-blue-600 group"
             >
               <span
                 className="cursor-pointer group-hover:underline"
@@ -26,7 +26,7 @@ const BookmarkPanel: React.FC<BookmarkPanelProps> = ({ bookmarkedCards, cardRefs
                 {front}
               </span>
               <button
-                className="text-red-400 hover:text-red-600 text-sm ml-4"
+                className="text-red-400 hover:text-red-600 text-sm ml-4 hidden group-hover:block"
                 onClick={() => onRemoveBookmark(front)}
               >
                 ❌

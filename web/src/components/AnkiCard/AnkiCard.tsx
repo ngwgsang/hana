@@ -1,5 +1,5 @@
 import ExternalUrl from 'src/components/ExternalUrl'
-import { PencilSquareIcon, BookmarkIcon } from '@heroicons/react/24/solid'
+import { PencilSquareIcon, BookmarkIcon, InformationCircleIcon } from '@heroicons/react/24/solid'
 import PingDot from 'src/components/PingDot'
 import ReviewStatusTag from 'src/components/ReviewStatusTag'
 
@@ -58,12 +58,17 @@ const AnkiCard = ({
         ${highlighted ? 'border-2 border-yellow-400' : ''}
         ${hidden ? 'hidden' : ''}`}
     >
-      <ExternalUrl
+      {/* <ExternalUrl
         className="text-lg font-semibold text-white"
         href={`https://mazii.net/vi-VN/search/word/javi/${card.front}`}
       >
         {card.front}
-      </ExternalUrl>
+      </ExternalUrl> */}
+      <span
+        className="text-lg font-semibold text-white"
+      >
+        {card.front}
+      </span>
 
       <span className="absolute right-2 bottom-2 rounded text-sm text-blue-500">
         {getTimeElapsedText(card.createdAt)}
@@ -108,6 +113,8 @@ const AnkiCard = ({
         >
           <PencilSquareIcon className="h-6 w-6 text-gray-400 hover:text-gray-600" />
         </button>
+        <ExternalUrl className='rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300' href={`https://mazii.net/vi-VN/search/word/javi/${card.front}`}>
+        <InformationCircleIcon className='h-6 w-6 text-gray-400 hover:text-gray-600'/></ExternalUrl>
         <button
           onClick={() => onBookmark?.(card)}
           className="rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300"

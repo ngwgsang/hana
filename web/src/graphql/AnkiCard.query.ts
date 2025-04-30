@@ -7,6 +7,7 @@ export const GET_ANKI_CARDS = gql`
       front
       back
       createdAt
+      enrollAt
       point
       tags {
         id

@@ -37,9 +37,17 @@ const TagList = ({ tags, cards }: TagListProps) => {
   return (
     <section className=''>
       <h3 className="my-4 text-white font-semibold text-xl">
-        Bộ thẻ ({cards.length})
+        Bộ thẻ
       </h3>
       <div className="flex flex-col gap-2 ">
+
+        <Link
+          key={0}
+          to={`/home?tag=${0}`}
+          className={`px-4 text-sm rounded-lg text-white text-left hover:brightness-110 transition`}
+        >
+          Tất cả ({cards.length})
+        </Link>
         {tags.map((tag, idx) => {
           return (
             <Link
