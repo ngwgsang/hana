@@ -1,5 +1,5 @@
 import { BoltIcon, PlusIcon, CloudArrowDownIcon, Squares2X2Icon } from '@heroicons/react/24/solid'
-import { Link } from '@redwoodjs/router'
+import { Link, useLocation } from '@redwoodjs/router'
 
 interface NavigationPanelProps {
   className?: string
@@ -8,6 +8,12 @@ interface NavigationPanelProps {
 }
 
 const NavigationPanel = ({className, onInsert, onExportCSV}: NavigationPanelProps) => {
+
+  const location = useLocation()
+  const searchParams = new URLSearchParams(location.search)
+  const tagFromURL = searchParams.get('tag')
+  const tagIds = tagFromURL ? [parseInt(tagFromURL, 10)] : [0]
+
   return (
     <div className='flex-col gap-2  p-4 rounded shadow-lg max-h-[60vh] overflow-y-auto bg-slate-800/40 lg:bg-slate-800'>
 
@@ -30,7 +36,7 @@ const NavigationPanel = ({className, onInsert, onExportCSV}: NavigationPanelProp
       <div className='flex flex-col gap-2'>
         <span onClick={onInsert} className='cursor-pointer rounded text-blue-600 hover:text-blue-700 hover:underline text-xs lg:hidden lg:pl-2'>Thêm thẻ</span>
         <Link
-          to='/swipe-me'
+          to={`/swipe-me?tag=${tagIds[0]}`}
           className="rounded text-blue-600 hover:text-blue-700 hover:underline text-xs lg:text-md lg:pl-2"
         >
           Luyện thẻ

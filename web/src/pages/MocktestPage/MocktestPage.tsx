@@ -11,16 +11,17 @@ import { GET_ANKI_CARDS, UPDATE_ANKI_CARD_POINT } from 'src/graphql/AnkiCard.que
 import { UPDATE_STUDY_PROGRESS } from 'src/graphql/Report.query';
 import { QUESTION_TYPES } from './QuestionType';
 import ExternalUrl from 'src/components/ExternalUrl/ExternalUrl';
+import HighlightText from 'src/components/HighlightText/HighlightText';
 
 
 const MocktestPage = () => {
 
   const global = useGlobal();
-  useEffect(() => {
-    if (global.isAuth == false) {
-      navigate("/login")
-    }
-  }, [])
+  // useEffect(() => {
+  //   if (global.isAuth == false) {
+  //     navigate("/login")
+  //   }
+  // }, [])
 
 
   const [questions, setQuestions] = useState([]);
@@ -34,6 +35,7 @@ const MocktestPage = () => {
   const [isSubmitDisabled, setIsSubmitDisabled] = useState(true);
   const [numQuestions, setNumQuestions] = useState(5); // Số lượng câu hỏi (mặc định: 5)
   const [questionType, setQuestionType] = useState("kanji"); // Thể loại câu hỏi (mặc định: tất cả)
+  const [example, setExample] = useState(QUESTION_TYPES[questionType].example)
 
   const [updateAnkiCardPoint] = useMutation(UPDATE_ANKI_CARD_POINT)
   const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
@@ -53,22 +55,11 @@ const MocktestPage = () => {
 
   const handleQuestionTypeChange = (event) => {
     setQuestionType(event.target.value);
+    setExample(QUESTION_TYPES[event.target.value].example)
   };
 
   const { data: cardsData, loading: cardsLoading, error: cardsError } = useQuery(GET_ANKI_CARDS);
 
-  // const handleShuffle = () => {
-  //   const shuffled = [...cardsData.ankiCards].sort(() => 0.5 - Math.random());
-  //   setRandomWords(shuffled.slice(0, 10).map(card => card.front));
-  //   setIdx(shuffled.slice(0, 10).map(card => card.id));
-  // }
-  // const handleShuffle = () => {
-  //   const shuffled = [...cardsData.ankiCards].sort(() => 0.5 - Math.random()).slice(0, numQuestions);
-  //   const shuffledWords = shuffled.map(card => card.front);
-  //   const shuffledIdx = shuffled.map(card => card.id);
-  //   setRandomWords(shuffledWords);
-  //   setIdx(shuffledIdx);
-  // };
   const handleShuffle = () => {
     if (!cardsData?.ankiCards) return;
 
@@ -244,9 +235,9 @@ const MocktestPage = () => {
       <Link to="/home">
         <ArrowUturnLeftIcon className="h-6 w-6 text-white mb-2" />
       </Link>
-      <div className="bg-gray-800 text-white p-4 rounded mb-4">
+      <div className="bg-gray-800 text-white p-4 rounded mb-4 flex flex-col gap-2">
         <h2 className="text-lg font-bold mb-2">Tạo câu hỏi JLPT</h2>
-        <div className="flex flex-col sm:flex-row gap-2 mb-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           {/* Chọn số lượng câu hỏi */}
           <div className="flex-1">
             <label className="block text-sm text-gray-300">Số lượng câu hỏi:</label>
@@ -270,12 +261,13 @@ const MocktestPage = () => {
               value={questionType}
               onChange={handleQuestionTypeChange}
               className="bg-gray-700 text-white p-2 rounded w-full"
-
             >
               {Object.entries(QUESTION_TYPES).map(([key, value]) => (
-                <option key={key} value={key}>
-                  {value.title}
-                </option>
+                <>
+                  <option key={key} value={key} className='pair'>
+                    {value.title}
+                  </option>
+                </>
               ))}
             </select>
           </div>
@@ -297,8 +289,26 @@ const MocktestPage = () => {
             </select>
           </div>
 
-
         </div>
+
+
+        { example ? (
+          <>
+            <span className='rounded-md text-blue-500'>Ví dụ</span>
+            <div className="bg-blue-500/10 flex p-4 flex-col gap-2 rounded justify-center border border-blue-500">
+                  <HighlightText isAlwayHighlight={true}>{example.question}</HighlightText>
+                  <div className='flex flex-col gap-1'>
+                    {
+                      example.choices.map((choice, index) =>
+                        (<span key={index} className={choice.isCorrect ? 'text-blue-500' : 'text-slate-300'}>{choice.text}</span>)
+                      )
+                    }
+
+                  </div>
+                  <div className='flex bg-blue-500/10 rounded-sm px-4 py-2 text-sm'>{example.explanation}</div>
+            </div>
+          </>
+        ): ""}
 
         <LoadingAnimation state={isLoading} texts={["Đang tạo câu hỏi...", (
           <button
@@ -330,7 +340,7 @@ const MocktestPage = () => {
           <span className="absolute border border-blue-500 bg-blue-500/10 rounded-md px-2 py-1 text-blue-500 font-semibold text-sm left-4 top-2">
             {q.questionType}
           </span>
-          <p className="text-white font-semibold">{index + 1}. {q.question}</p>
+          <HighlightText className="text-white " isAlwayHighlight={true}>{q.question}</HighlightText>
           <div className="mt-2 space-y-2">
             {q.choices.map((choice, choiceIndex) => {
               const isSelected = selectedAnswers[index] === choice;

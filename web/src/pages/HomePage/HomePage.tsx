@@ -210,13 +210,13 @@ const HomePage = () => {
 
         if (pointChange === 1) {
           // Khi nhớ, tăng điểm nhưng có giới hạn max
-          newPoint = Math.min(10, card.point * 1.5);
+          newPoint = Math.max(2, card.point * 1.5);
         } else if (pointChange === -1) {
           // Khi quên, giảm theo tỷ lệ nhưng không về 0 ngay
-          newPoint = Math.max(0, card.point * 0.7);
+          newPoint = Math.max(0, card.point * 0.5);
         } else {
           // Khi không chắc, giảm nhẹ hoặc giữ nguyên
-          newPoint = Math.max(0, card.point - 1);
+          newPoint = card.point - 2;
         }
         return { ...card, point: Math.round(newPoint) };
       })

@@ -4,6 +4,7 @@ import { GET_ANKI_CARDS, UPDATE_ANKI_CARD_POINT } from 'src/graphql/AnkiCard.que
 import { UPDATE_STUDY_PROGRESS } from 'src/graphql/Report.query'
 import { ArrowUturnLeftIcon } from '@heroicons/react/24/solid'
 import { Link } from '@redwoodjs/router'
+import { useLocation } from '@redwoodjs/router'
 import useSpacedRepetition from 'src/hook/useSpacedRepetition'
 
 const SwipeCardSkeleton = () => {
@@ -18,9 +19,13 @@ const SwipeCardSkeleton = () => {
 }
 
 const SwipeMePage = () => {
+  const location = useLocation()
+  const searchParams = new URLSearchParams(location.search)
+  const tagFromURL = searchParams.get('tag')
+  const tagIds = tagFromURL == '0' ? [] : [parseInt(tagFromURL, 10)];
 
   const { data, loading, error, refetch } = useQuery(GET_ANKI_CARDS, {
-    variables: { searchTerm: '', tagIds: [] }, // Không cần skip/take nữa
+    variables: { searchTerm: '', tagIds },
     onCompleted: (data) => {
       if (!data?.ankiCards) return;
 

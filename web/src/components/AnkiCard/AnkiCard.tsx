@@ -2,6 +2,7 @@ import ExternalUrl from 'src/components/ExternalUrl'
 import { PencilSquareIcon, BookmarkIcon, InformationCircleIcon } from '@heroicons/react/24/solid'
 import PingDot from 'src/components/PingDot'
 import ReviewStatusTag from 'src/components/ReviewStatusTag'
+import HighlightText from '../HighlightText/HighlightText'
 
 interface AnkiCardProps {
   card: {
@@ -40,13 +41,6 @@ const AnkiCard = ({
     return ''
   }
 
-  const HandleSpecialText = (text: string) => {
-    if (!text) return ''
-    return text
-      .replace(/\n/g, '<br />')
-      .replace(/\*\*(.*?)\*\*/g, "<b class='group-hover:bg-sky-500/30 rounded-sm'>$1</b>")
-  }
-
   return (
     <div
       id={`card-${card.front}`}
@@ -78,10 +72,7 @@ const AnkiCard = ({
         <PingDot className="absolute -left-1 top-1 -translate-y-1/2" />
       )}
 
-      <div
-        className="text-slate-300"
-        dangerouslySetInnerHTML={{ __html: HandleSpecialText(card.back) }}
-      />
+      <HighlightText>{card.back}</HighlightText>
 
       <div className="my-2 text-sm text-blue-500">
         {card.tags
