@@ -52,11 +52,12 @@ const HomePage = () => {
   const [updateStudyProgress] = useMutation(UPDATE_STUDY_PROGRESS)
   const [updateAnkiCardPoint] = useMutation(UPDATE_ANKI_CARD_POINT)
 
-  // useEffect(() => {
-  //   if (global.isAuth == false) {
-  //     navigate("/login")
-  //   }
-  // }, [])
+  useEffect(() => {
+    if (global.isAuth == false) {
+      navigate("/login")
+    }
+  }, [])
+
   const filterCardsByStatus = (cards, statusKey) => {
     if (!statusKey) return cards
 
