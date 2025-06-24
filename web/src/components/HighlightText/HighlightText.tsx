@@ -2,16 +2,19 @@ interface HighlightTextProps {
   children: string
   isAlwayHighlight?: boolean
   className?: string
+  isUnderlined?: boolean
+  color?: String
 }
 
 
-const HighlightText = ({children, isAlwayHighlight, className}: HighlightTextProps) => {
+const HighlightText = ({children, isAlwayHighlight, className, isUnderlined, color}: HighlightTextProps) => {
 
+  const textColor = color ? `text-${color}-500` : "text-blue-500"
   const HandleSpecialText = (text: string) => {
     if (!text) return ''
     return text
       .replace(/\n/g, '<br />')
-      .replace(/\*\*(.*?)\*\*/g, `<b class='group-hover:bg-sky-500/30 rounded-sm ${isAlwayHighlight ? 'text-blue-500' : ''}'>$1</b>`)
+      .replace(/\*\*(.*?)\*\*/g, `<b class='group-hover:bg-sky-500/30 rounded-sm ${isAlwayHighlight ? textColor : ''} ${isUnderlined ? 'underline underline-offset-2' : ''}'>$1</b>`)
   }
 
   return (

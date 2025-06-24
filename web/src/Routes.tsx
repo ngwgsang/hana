@@ -16,6 +16,7 @@ import ReportPage from './pages/ReportPage/ReportPage'
 const Routes = () => {
   return (
     <Router>
+      <Route path="/translatetest" page={TranslateTestPage} name="translateTest" />
       <Route path="/swipe-me" page={SwipeMePage} name="swipeMe" />
       <Route path="/mocktest" page={MocktestPage} name="mocktest" />
       <Route path="/login" page={LoginPage} name="login" />
