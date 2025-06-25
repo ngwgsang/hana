@@ -153,7 +153,7 @@ const TranslateTestPage = () => {
       <p className="text-white">
         {parts.map((part, i) =>
           words.some(word => part.toLowerCase() === word.toLowerCase()) ? (
-            <span key={i} className="bg-yellow-500 text-black rounded px-1 transition-all duration-300">
+            <span key={i} className="underline text-yellow-500 underline-offset-2 rounded transition-all duration-300">
               {part}
             </span>
           ) : (
