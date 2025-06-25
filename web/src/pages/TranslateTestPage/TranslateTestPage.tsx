@@ -49,7 +49,7 @@ const TranslateTestPage = () => {
     setHighlightedWords([])
 
     try {
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
       const seed = SEED_SENTENCES[Math.floor(Math.random() * SEED_SENTENCES.length)]
       const prompt = `Bạn là một nhà văn. Hãy tạo một đoạn văn tiếng Nhật tự nhiên, dài khoảng 150-200 từ, có chứa câu sau: "${seed.text}". Đoạn văn nên nói về cuộc sống hàng ngày hoặc một câu chuyện nhỏ, trình độ ở mức ${seed.tag}.`
 
@@ -111,7 +111,7 @@ const TranslateTestPage = () => {
       }
 
       const model = genAI.getGenerativeModel({
-        model: 'gemini-1.5-flash',
+        model: 'gemini-2.0-flash',
         generationConfig: {
           responseMimeType: 'application/json',
           responseSchema: schema,
