@@ -7,7 +7,6 @@ import { ArrowUturnLeftIcon } from '@heroicons/react/24/solid'
 import { Metadata } from '@redwoodjs/web'
 import { SEED_SENTENCES } from './DokkaiSeed'
 
-// Cập nhật interface
 interface EvaluationResult {
   accuracy: number
   fluency: number
@@ -34,7 +33,7 @@ const TranslateTestPage = () => {
   const [evaluationResult, setEvaluationResult] = useState<EvaluationResult | null>(null)
   const [isPopupOpen, setIsOpen] = useState(false)
   const [showGoldAnswer, setShowGoldAnswer] = useState(false)
-  const [highlightedWords, setHighlightedWords] = useState<string[]>([]) // State cho các từ cần highlight
+  const [highlightedWords, setHighlightedWords] = useState<string[]>([])
 
   const genAI = new GoogleGenerativeAI(process.env.REDWOOD_ENV_API_KEY)
 
@@ -44,7 +43,7 @@ const TranslateTestPage = () => {
     setHighlightedSentence('')
     setParagraphTranslation('')
     setUserTranslation('')
-    setEvaluationResult(null)
+    setEvaluationResult(null) // Reset kết quả khi tạo đoạn văn mới
     setShowGoldAnswer(false)
     setHighlightedWords([])
 
@@ -78,6 +77,12 @@ const TranslateTestPage = () => {
   }
 
   const handleCheckTranslation = async () => {
+    // Nếu đã có kết quả, chỉ cần mở lại popup
+    if (evaluationResult) {
+      setIsOpen(true)
+      return
+    }
+
     if (!userTranslation.trim()) {
       alert('Vui lòng nhập bản dịch của bạn.')
       return
@@ -85,7 +90,6 @@ const TranslateTestPage = () => {
     setIsChecking(true)
 
     try {
-      // Cập nhật schema để Gemini trả về danh sách các từ cần đánh dấu
       const schema = {
         type: SchemaType.OBJECT,
         properties: {
@@ -137,7 +141,6 @@ const TranslateTestPage = () => {
     setHighlightedWords([])
   }
 
-  // Hàm render bản dịch với các từ được highlight
   const renderUserTranslationWithHighlights = (text: string, words: string[]) => {
     if (!words || words.length === 0) {
       return text;
@@ -150,7 +153,7 @@ const TranslateTestPage = () => {
       <p className="text-white">
         {parts.map((part, i) =>
           words.some(word => part.toLowerCase() === word.toLowerCase()) ? (
-            <span key={i} className="underline text-yellow-500 underline-offset-2 rounded transition-all duration-300">
+            <span key={i} className="bg-yellow-500 text-black rounded px-1 transition-all duration-300">
               {part}
             </span>
           ) : (
@@ -213,7 +216,10 @@ const TranslateTestPage = () => {
             </h3>
             <textarea
               value={userTranslation}
-              onChange={(e) => setUserTranslation(e.target.value)}
+              onChange={(e) => {
+                setUserTranslation(e.target.value)
+                setEvaluationResult(null) // Reset khi người dùng sửa bản dịch
+              }}
               className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
               rows={3}
               maxLength={256}
@@ -226,7 +232,7 @@ const TranslateTestPage = () => {
               disabled={!userTranslation.trim()}
               className="bg-green-500 px-4 flex w-full py-2 rounded text-white hover:bg-green-700 justify-center disabled:bg-gray-500 disabled:cursor-not-allowed"
             >
-              Kiểm tra
+              {evaluationResult ? 'Xem lại kết quả 👀' : 'Kiểm tra'}
             </button>]} />
         </div>
       )}
@@ -241,7 +247,6 @@ const TranslateTestPage = () => {
             <div className='flex flex-col bg-gray-900/50 border border-gray-700 rounded-md p-4 gap-2'>
               <div>
                 <h4 className="font-semibold text-gray-400 text-sm mb-1">Bản dịch của bạn:</h4>
-                {/* Thay thế HighlightText bằng hàm render mới */}
                 {renderUserTranslationWithHighlights(userTranslation, highlightedWords)}
               </div>
 
@@ -262,7 +267,7 @@ const TranslateTestPage = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
               {feedbackItems.map(item => (
                 <div key={item.title}
-                     className="bg-gray-700/50 p-3 rounded-lg w-full cursor-pointer"
+                     className="bg-gray-700/50 p-3 rounded-lg w-full cursor-pointer transition-all duration-200 hover:bg-gray-700"
                      onMouseEnter={() => setHighlightedWords(item.marked)}
                      onMouseLeave={() => setHighlightedWords([])}
                 >
