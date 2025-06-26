@@ -48,6 +48,12 @@ const NavigationPanel = ({className, onInsert, onExportCSV}: NavigationPanelProp
           Luyện đề
         </Link>
         <Link
+          to='/translatetest'
+          className="rounded text-blue-600 hover:text-blue-700 hover:underline text-xs lg:text-md lg:pl-2"
+        >
+          Luyện dịch
+        </Link>
+        <Link
           to='/report'
           className="rounded text-blue-600 hover:text-blue-700 hover:underline text-xs lg:text-md lg:pl-2"
         >

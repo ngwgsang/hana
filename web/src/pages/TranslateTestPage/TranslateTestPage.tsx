@@ -1,11 +1,16 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai'
 import LoadingAnimation from 'src/components/LoadingAnimation/LoadingAnimation'
 import Popup from 'src/components/Popup/Popup'
 import { Link } from '@redwoodjs/router'
-import { ArrowUturnLeftIcon } from '@heroicons/react/24/solid'
+import { ArrowUturnLeftIcon, ArrowPathIcon } from '@heroicons/react/24/solid'
 import { Metadata } from '@redwoodjs/web'
 import { SEED_SENTENCES } from './DokkaiSeed'
+
+interface Seed {
+  text: string;
+  tag: string;
+}
 
 interface EvaluationResult {
   accuracy: number
@@ -35,22 +40,47 @@ const TranslateTestPage = () => {
   const [showGoldAnswer, setShowGoldAnswer] = useState(false)
   const [highlightedWords, setHighlightedWords] = useState<string[]>([])
 
+  // State mới cho việc chọn seed
+  const [currentSeed, setCurrentSeed] = useState<Seed | null>(null)
+  const [selectedTag, setSelectedTag] = useState('all')
+  const uniqueTags = ['all', 'N1', 'N2', 'N3', 'N4', 'N5']
+
+
   const genAI = new GoogleGenerativeAI(process.env.REDWOOD_ENV_API_KEY)
 
+  const handleRandomSeed = () => {
+    let filteredSeeds = SEED_SENTENCES;
+    if (selectedTag !== 'all') {
+      filteredSeeds = SEED_SENTENCES.filter(s => s.tag === selectedTag);
+    }
+    const randomSeed = filteredSeeds[Math.floor(Math.random() * filteredSeeds.length)];
+    setCurrentSeed(randomSeed);
+  }
+
+  // Chọn seed ngẫu nhiên khi component được tải lần đầu
+  useEffect(() => {
+    handleRandomSeed();
+  }, [selectedTag])
+
+
   const handleGenerateParagraph = async () => {
+    if (!currentSeed) {
+      alert("Vui lòng chọn một câu gốc trước.");
+      return;
+    }
+
     setIsLoading(true)
     setGeneratedParagraph('')
     setHighlightedSentence('')
     setParagraphTranslation('')
     setUserTranslation('')
-    setEvaluationResult(null) // Reset kết quả khi tạo đoạn văn mới
+    setEvaluationResult(null)
     setShowGoldAnswer(false)
     setHighlightedWords([])
 
     try {
       const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
-      const seed = SEED_SENTENCES[Math.floor(Math.random() * SEED_SENTENCES.length)]
-      const prompt = `Bạn là một nhà văn. Hãy tạo một đoạn văn tiếng Nhật tự nhiên, dài khoảng 150-200 từ, có chứa câu sau: "${seed.text}". Đoạn văn nên nói về cuộc sống hàng ngày hoặc một câu chuyện nhỏ, trình độ ở mức ${seed.tag}. Chỉ cần trả về đoạn văn tiếng nhật tôi yêu cầu, không nói gì thêm`
+      const prompt = `Bạn là một nhà văn. Hãy tạo một đoạn văn tiếng Nhật tự nhiên, dài khoảng 150-200 từ, có chứa câu sau: "${currentSeed.text}". Đoạn văn nên nói về cuộc sống hàng ngày hoặc một câu chuyện nhỏ, trình độ ở mức ${currentSeed.tag}. Chỉ cần trả về đoạn văn tiếng nhật tôi yêu cầu, không nói gì thêm`
 
       const result = await model.generateContent(prompt)
       const paragraph = result.response.text()
@@ -77,7 +107,6 @@ const TranslateTestPage = () => {
   }
 
   const handleCheckTranslation = async () => {
-    // Nếu đã có kết quả, chỉ cần mở lại popup
     if (evaluationResult) {
       setIsOpen(true)
       return
@@ -153,7 +182,7 @@ const TranslateTestPage = () => {
       <p className="text-white">
         {parts.map((part, i) =>
           words.some(word => part.toLowerCase() === word.toLowerCase()) ? (
-            <span key={i} className="underline text-yellow-500 underline-offset-2 rounded transition-all duration-300">
+            <span key={i} className="bg-yellow-500 text-black rounded px-1 transition-all duration-300">
               {part}
             </span>
           ) : (
@@ -185,6 +214,42 @@ const TranslateTestPage = () => {
 
       <div className="bg-gray-800 text-white p-4 rounded mb-4 flex flex-col gap-4">
         <h2 className="text-lg font-bold">Tạo đoạn văn luyện dịch</h2>
+
+        {/* === PHẦN THAY ĐỔI === */}
+        <div className="flex flex-col sm:flex-row gap-2 items-end">
+            <div className="flex-grow">
+                <label className="block text-sm text-gray-300 mb-1">Câu gốc (Seed):</label>
+                <input
+                    type="text"
+                    readOnly
+                    value={currentSeed ? currentSeed.text : 'Đang tải...'}
+                    className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
+                />
+            </div>
+            <div className="flex-shrink-0">
+                 <label className="block text-sm text-gray-300 mb-1">Trình độ:</label>
+                <select
+                    value={selectedTag}
+                    onChange={(e) => setSelectedTag(e.target.value)}
+                    className="p-2 bg-gray-700 border border-gray-600 rounded text-white h-full"
+                >
+                    {uniqueTags.map(tag => (
+                        <option key={tag} value={tag}>{tag === 'all' ? 'Tất cả' : tag}</option>
+                    ))}
+                </select>
+            </div>
+             <div className="flex-shrink-0">
+                <button
+                    onClick={handleRandomSeed}
+                    className="p-2 bg-gray-600 hover:bg-gray-500 rounded text-white h-full"
+                    title="Đổi câu khác"
+                >
+                    <ArrowPathIcon className="w-6 h-6"/>
+                </button>
+            </div>
+        </div>
+        {/* === KẾT THÚC PHẦN THAY ĐỔI === */}
+
         <LoadingAnimation
           state={isLoading}
           texts={['Đang tạo đoạn văn...', <button
@@ -218,7 +283,7 @@ const TranslateTestPage = () => {
               value={userTranslation}
               onChange={(e) => {
                 setUserTranslation(e.target.value)
-                setEvaluationResult(null) // Reset khi người dùng sửa bản dịch
+                setEvaluationResult(null)
               }}
               className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
               rows={3}
