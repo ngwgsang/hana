@@ -50,7 +50,7 @@ const TranslateTestPage = () => {
     try {
       const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
       const seed = SEED_SENTENCES[Math.floor(Math.random() * SEED_SENTENCES.length)]
-      const prompt = `Bạn là một nhà văn. Hãy tạo một đoạn văn tiếng Nhật tự nhiên, dài khoảng 150-200 từ, có chứa câu sau: "${seed.text}". Đoạn văn nên nói về cuộc sống hàng ngày hoặc một câu chuyện nhỏ, trình độ ở mức ${seed.tag}.`
+      const prompt = `Bạn là một nhà văn. Hãy tạo một đoạn văn tiếng Nhật tự nhiên, dài khoảng 150-200 từ, có chứa câu sau: "${seed.text}". Đoạn văn nên nói về cuộc sống hàng ngày hoặc một câu chuyện nhỏ, trình độ ở mức ${seed.tag}. Chỉ đơn giản trả về các đoạn văn Tiếng Việt, Tiếng Nhật và không cần nói là 'tôi hiểu rồi tôi sẽ tạo cho bạn...' `
 
       const result = await model.generateContent(prompt)
       const paragraph = result.response.text()
