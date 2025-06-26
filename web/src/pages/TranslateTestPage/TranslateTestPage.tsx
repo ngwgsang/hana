@@ -43,7 +43,7 @@ const TranslateTestPage = () => {
   // State mới cho việc chọn seed
   const [currentSeed, setCurrentSeed] = useState<Seed | null>(null)
   const [selectedTag, setSelectedTag] = useState('all')
-  const uniqueTags = ['all', 'N1', 'N2', 'N3', 'N4', 'N5']
+  const uniqueTags = ['N1', 'N2', 'N3', 'N4', 'N5']
 
 
   const genAI = new GoogleGenerativeAI(process.env.REDWOOD_ENV_API_KEY)
@@ -216,17 +216,8 @@ const TranslateTestPage = () => {
         <h2 className="text-lg font-bold">Tạo đoạn văn luyện dịch</h2>
 
         {/* === PHẦN THAY ĐỔI === */}
-        <div className="flex flex-col sm:flex-row gap-2 items-end">
-            <div className="flex-grow">
-                <label className="block text-sm text-gray-300 mb-1">Câu gốc (Seed):</label>
-                <input
-                    type="text"
-                    readOnly
-                    value={currentSeed ? currentSeed.text : 'Đang tải...'}
-                    className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
-                />
-            </div>
-            <div className="flex-shrink-0">
+        <div className="flex flex-col gap-2 items-end w-full">
+            <div className="w-full">
                  <label className="block text-sm text-gray-300 mb-1">Trình độ:</label>
                 <select
                     value={selectedTag}
@@ -238,7 +229,14 @@ const TranslateTestPage = () => {
                     ))}
                 </select>
             </div>
-             <div className="flex-shrink-0">
+            <div className="w-full flex-grow-2 ">
+                <label className="block text-sm text-gray-300 mb-1">Chủ đề:</label>
+                <div className='flex gap-1 w-full items-center justify-center'>
+                <input
+                    type="text"
+                    value={currentSeed ? currentSeed.text : 'Đang tải...'}
+                    className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
+                />
                 <button
                     onClick={handleRandomSeed}
                     className="p-2 bg-gray-600 hover:bg-gray-500 rounded text-white h-full"
@@ -246,7 +244,9 @@ const TranslateTestPage = () => {
                 >
                     <ArrowPathIcon className="w-6 h-6"/>
                 </button>
+                </div>
             </div>
+
         </div>
         {/* === KẾT THÚC PHẦN THAY ĐỔI === */}
 
