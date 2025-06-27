@@ -107,7 +107,7 @@ export const QUESTION_TYPES = {
       ほうせん
       ほうせい
       **Đáp án đúng:** ほうしん
-      **Giải thích:** "方針" được đọc là "ほうしん" (houshin), có nghĩa là "chính sách, phương châm".
+      **Giải thích:** "方針" được đọc là "ほうしん" (houshin), có nghĩa là "chính sách, phương châm", câu này có nghĩa là "Anh ấy đã hành động theo đúng phương châm của công ty.".
       ---------------------------------------------------------
       **Câu hỏi:** 新しい仕事を**依頼**された。
       **Đáp án:**
@@ -116,7 +116,7 @@ export const QUESTION_TYPES = {
       いりょく
       いらん
       **Đáp án đúng:** いらい
-      **Giải thích:** "依頼" được đọc là "いらい" (irai), có nghĩa là "yêu cầu, nhờ vả".
+      **Giải thích:** "依頼" được đọc là "いらい" (irai), có nghĩa là "yêu cầu, nhờ vả", câu này có nghĩa là "Tôi được yêu cầu làm một công việc mới.".
       ---------------------------------------------------------
       **Câu hỏi:** 彼は**責任**を持って仕事をしている。
       **Đáp án:**
@@ -125,7 +125,7 @@ export const QUESTION_TYPES = {
       せっきん
       せきねん
       **Đáp án đúng:** せきにん
-      **Giải thích:** "責任" được đọc là "せきにん" (sekinin), có nghĩa là "trách nhiệm".
+      **Giải thích:** "責任" được đọc là "せきにん" (sekinin), có nghĩa là "trách nhiệm", câu này có nghĩa là "Anh ấy làm việc có trách nhiệm." .
       `,
       example: {
         question: "彼は会社の**方針**に従って行動した。",
